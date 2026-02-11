@@ -1,0 +1,89 @@
+import { useState, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+
+export function useAccessibilityPreferences() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const checkPhase22Entry = useCallback(async () => {
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('check_phase22_entry_gate');
+
+      if (rpcError) throw rpcError;
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to check Phase 22 entry';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updateAccessibilitySettings = useCallback(async (settings: {
+    textSize?: string;
+    highContrastMode?: boolean;
+    buttonSpacing?: string;
+    simplifiedUiMode?: boolean;
+    voiceReadbackEnabled?: boolean;
+    voiceReadbackSpeed?: number;
+    deviceFingerprint?: string;
+  }) => {
+    }
+
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('update_senior_accessibility_settings', {
+        p_text_size: settings.textSize || null,
+        p_high_contrast_mode: settings.highContrastMode ?? null,
+        p_button_spacing: settings.buttonSpacing || null,
+        p_simplified_ui_mode: settings.simplifiedUiMode ?? null,
+        p_voice_readback_enabled: settings.voiceReadbackEnabled ?? null,
+        p_voice_readback_speed: settings.voiceReadbackSpeed || null,
+        p_device_fingerprint: settings.deviceFingerprint || null
+      });
+
+      if (rpcError) throw rpcError;
+      if (data && !data.success) throw new Error('Failed to update accessibility settings');
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to update accessibility settings';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const getAccessibilitySettings = useCallback(async () => {
+    }
+
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('get_senior_accessibility_settings');
+
+      if (rpcError) throw rpcError;
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to get accessibility settings';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  return {
+    loading,
+    error,
+    checkPhase22Entry,
+    updateAccessibilitySettings,
+    getAccessibilitySettings
+  };
+}

@@ -1,0 +1,258 @@
+import { useState, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+
+export function useResidentBaseline() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const checkPhase20Entry = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('check_phase20_entry_gate');
+
+      if (rpcError) throw rpcError;
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to check Phase 20 entry';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const createBaseline = useCallback(async (residentId: string, baseline: any) => {
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('create_resident_baseline', {
+        p_resident_id: residentId,
+        p_blood_pressure_systolic: baseline.bpSystolic,
+        p_blood_pressure_diastolic: baseline.bpDiastolic,
+        p_heart_rate: baseline.heartRate,
+        p_weight_kg: baseline.weightKg,
+        p_mobility_status: baseline.mobilityStatus,
+        p_cognitive_status: baseline.cognitiveStatus,
+        p_fall_risk_level: baseline.fallRiskLevel,
+        p_baseline_notes: baseline.notes || null,
+        p_data_source: baseline.dataSource || 'MANUAL',
+        p_language_context: baseline.languageContext || 'en'
+      });
+
+      if (rpcError) throw rpcError;
+      if (data && !data.success) throw new Error('Failed to create baseline');
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to create baseline';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const addEmergencyContact = useCallback(async (residentId: string, contact: any) => {
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('add_emergency_contact', {
+        p_resident_id: residentId,
+        p_contact_name: contact.name,
+        p_relationship: contact.relationship,
+        p_phone_primary: contact.phonePrimary,
+        p_phone_secondary: contact.phoneSecondary || null,
+        p_email: contact.email || null,
+        p_is_primary: contact.isPrimary || false,
+        p_notes: contact.notes || null,
+        p_language_context: contact.languageContext || 'en'
+      });
+
+      if (rpcError) throw rpcError;
+      if (data && !data.success) throw new Error('Failed to add emergency contact');
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to add emergency contact';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const addPhysician = useCallback(async (residentId: string, physician: any) => {
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('add_resident_physician', {
+        p_resident_id: residentId,
+        p_physician_name: physician.name,
+        p_specialty: physician.specialty,
+        p_clinic_name: physician.clinicName,
+        p_phone: physician.phone,
+        p_fax: physician.fax || null,
+        p_email: physician.email || null,
+        p_address: physician.address || null,
+        p_is_primary: physician.isPrimary || false,
+        p_notes: physician.notes || null,
+        p_language_context: physician.languageContext || 'en'
+      });
+
+      if (rpcError) throw rpcError;
+      if (data && !data.success) throw new Error('Failed to add physician');
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to add physician';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const addMedication = useCallback(async (residentId: string, medication: any) => {
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('add_resident_medication', {
+        p_resident_id: residentId,
+        p_medication_name: medication.name,
+        p_dosage: medication.dosage,
+        p_frequency: medication.frequency,
+        p_route: medication.route,
+        p_schedule: JSON.stringify(medication.schedule || {}),
+        p_prescriber_name: medication.prescriberName,
+        p_is_prn: medication.isPRN || false,
+        p_is_controlled: medication.isControlled || false,
+        p_start_date: medication.startDate,
+        p_end_date: medication.endDate || null,
+        p_indication: medication.indication || null,
+        p_side_effects_to_monitor: medication.sideEffects || null,
+        p_special_instructions: medication.specialInstructions || null,
+        p_language_context: medication.languageContext || 'en'
+      });
+
+      if (rpcError) throw rpcError;
+      if (data && !data.success) throw new Error('Failed to add medication');
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to add medication';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const createCarePlanAnchors = useCallback(async (residentId: string, carePlan: any) => {
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('create_care_plan_anchors', {
+        p_resident_id: residentId,
+        p_care_frequency: carePlan.careFrequency,
+        p_mobility_assistance_needs: carePlan.mobilityNeeds || [],
+        p_behavioral_considerations: carePlan.behavioralConsiderations || null,
+        p_dietary_restrictions: carePlan.dietaryRestrictions || [],
+        p_dietary_preferences: carePlan.dietaryPreferences || [],
+        p_sleep_patterns: JSON.stringify(carePlan.sleepPatterns || { typical_bedtime: '22:00', typical_wake: '07:00' }),
+        p_known_triggers: carePlan.knownTriggers || [],
+        p_communication_preferences: carePlan.communicationPreferences || null,
+        p_activity_preferences: carePlan.activityPreferences || [],
+        p_social_needs: carePlan.socialNeeds || null,
+        p_special_considerations: carePlan.specialConsiderations || null,
+        p_language_context: carePlan.languageContext || 'en'
+      });
+
+      if (rpcError) throw rpcError;
+      if (data && !data.success) throw new Error('Failed to create care plan anchors');
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to create care plan anchors';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const setConsentConfig = useCallback(async (residentId: string, consent: any) => {
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('set_consent_config', {
+        p_resident_id: residentId,
+        p_family_visibility_level: consent.familyVisibilityLevel,
+        p_ai_assistance_level: consent.aiAssistanceLevel,
+        p_data_sharing_scope: consent.dataSharingScope,
+        p_emergency_override_permissions: JSON.stringify(consent.emergencyOverridePermissions || {}),
+        p_photo_consent: consent.photoConsent,
+        p_voice_recording_consent: consent.voiceRecordingConsent,
+        p_biometric_consent: consent.biometricConsent,
+        p_third_party_sharing_consent: consent.thirdPartySharingConsent,
+        p_consent_obtained_from: consent.obtainedFrom,
+        p_legal_representative_name: consent.legalRepName || null,
+        p_legal_representative_relationship: consent.legalRepRelationship || null,
+        p_language_context: consent.languageContext || 'en'
+      });
+
+      if (rpcError) throw rpcError;
+      if (data && !data.success) throw new Error('Failed to set consent config');
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to set consent config';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const validateCompleteness = useCallback(async (residentId: string) => {
+    try {    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('validate_baseline_completeness', {
+        p_resident_id: residentId
+      });
+
+      if (rpcError) throw rpcError;
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to validate completeness';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const sealBaseline = useCallback(async (residentId: string, confirmationText: string) => {
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('seal_resident_baseline', {
+        p_resident_id: residentId,
+        p_confirmation_text: confirmationText
+      });
+
+      if (rpcError) throw rpcError;
+      if (data && !data.success) throw new Error(data.error || 'Failed to seal baseline');
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to seal baseline';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  return {
+    loading,
+    error,
+    checkPhase20Entry,
+    createBaseline,
+    addEmergencyContact,
+    addPhysician,
+    addMedication,
+    createCarePlanAnchors,
+    setConsentConfig,
+    validateCompleteness,
+    sealBaseline
+  };
+}

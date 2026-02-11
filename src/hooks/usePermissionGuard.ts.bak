@@ -1,0 +1,64 @@
+import { useUserPermissions } from './useUserPermissions';
+
+export interface PermissionCheckResult {
+  allowed: boolean;
+  reason?: string;
+  userMessage?: string;
+}
+
+export function usePermissionGuard() {
+  const { hasPermission } = useUserPermissions();
+
+  const checkPermission = (permission: string, actionName: string): PermissionCheckResult => {
+    if (DEMO_MODE) {
+      return { allowed: true };
+    }
+
+    const allowed = hasPermission(permission);
+
+    if (!allowed) {
+      return {
+        allowed: false,
+        reason: `Missing permission: ${permission}`,
+        userMessage: `You do not have permission to ${actionName}. Please contact your administrator.`
+      };
+    }
+
+    return { allowed: true };
+  };
+
+  const guardAction = async <T>(
+    permission: string,
+    actionName: string,
+    action: () => Promise<T>
+  ): Promise<{ success: boolean; data?: T; error?: string }> => {
+    const check = checkPermission(permission, actionName);
+
+    if (!check.allowed) {
+      return {
+        success: false,
+        error: check.userMessage
+      };
+    }
+
+    try {
+      const data = await action();
+      return { success: true, data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Action failed'
+      };
+    }
+  };
+
+  const getPermissionError = (permission: string, actionName: string): string => {
+    return `You do not have permission to ${actionName}. Required permission: ${permission}`;
+  };
+
+  return {
+    checkPermission,
+    guardAction,
+    getPermissionError
+  };
+}

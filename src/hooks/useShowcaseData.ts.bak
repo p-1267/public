@@ -1,0 +1,42 @@
+import { useShowcase } from '../contexts/ShowcaseContext';
+
+export function useShowcaseData<T = any>(
+  dataType: 'residents' | 'medications' | 'shifts' | 'assignments' | 'users' | 'brainState',
+  filter?: (item: any) => boolean
+): T[] | T | null {
+  const { isShowcaseMode, scenarioData } = useShowcase();
+
+  if (!isShowcaseMode || !scenarioData) {
+    return null;
+  }
+
+  const data = scenarioData[dataType];
+
+  if (!data) {
+    return null;
+  }
+
+  if (dataType === 'brainState') {
+    return data as T;
+  }
+
+  if (Array.isArray(data)) {
+    if (filter) {
+      return data.filter(filter) as T[];
+    }
+    return data as T[];
+  }
+
+  return data as T;
+}
+
+export function useShowcaseAction() {
+  const { isShowcaseMode, executeShowcaseAction } = useShowcase();
+
+  return async (action: string, data: any) => {
+    if (!isShowcaseMode) {
+      throw new Error('Showcase actions only available in showcase mode');
+    }
+    return executeShowcaseAction(action, data);
+  };
+}

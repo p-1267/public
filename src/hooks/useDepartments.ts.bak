@@ -1,0 +1,271 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import { SHOWCASE_MODE } from '../config/showcase';
+import { useShowcase } from '../contexts/ShowcaseContext';
+
+export interface Department {
+  id: string;
+  agency_id: string;
+  name: string;
+  department_code: string;
+  description: string;
+  icon: string;
+  supervisor_id: string | null;
+  supervisor_name: string | null;
+  status: 'normal' | 'understaffed' | 'alerts';
+  staff_count: number;
+  metadata: any;
+  created_at: string;
+}
+
+export interface DepartmentPersonnel {
+  id: string;
+  department_id: string;
+  department_name: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  display_name: string;
+  employee_id: string;
+  position_title: string;
+  shift_pattern: string;
+  skills_tags: any;
+  work_phone: string;
+  work_email: string;
+  status: string;
+  workload_indicator: number;
+  is_primary_department: boolean;
+  metadata: any;
+}
+
+export interface DepartmentAssignment {
+  id: string;
+  agency_id: string;
+  department_id: string;
+  department_name: string;
+  title: string;
+  description: string;
+  created_by_id: string | null;
+  created_by_name: string | null;
+  assigned_to_id: string | null;
+  assigned_to_name: string | null;
+  shift_type: 'day' | 'evening' | 'night';
+  shift_start: string;
+  shift_end: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  location_area: string;
+  status: 'not_started' | 'in_progress' | 'blocked' | 'completed';
+  acceptance_state: 'pending' | 'acknowledged' | 'accepted' | 'declined';
+  checklist_tasks: any;
+  notes: string;
+  handoff_notes: string;
+  completed_at: string | null;
+  metadata: any;
+  created_at: string;
+}
+
+export interface DepartmentSchedule {
+  id: string;
+  department_id: string;
+  department_name: string;
+  user_id: string;
+  user_name: string;
+  employee_id: string;
+  position_title: string;
+  shift_date: string;
+  shift_type: string;
+  shift_start: string;
+  shift_end: string;
+  assignments_count: number;
+  status: string;
+  metadata: any;
+}
+
+export const useDepartments = () => {
+  const showcaseContext = SHOWCASE_MODE ? useShowcase() : null;
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const agencyId = SHOWCASE_MODE ? showcaseContext?.mockAgencyId : null;
+
+  console.log('[useDepartments] Hook initialized:', {
+    SHOWCASE_MODE,
+    agencyId,
+    hasContext: !!showcaseContext,
+    currentRole: showcaseContext?.currentRole,
+    isAuthenticated: showcaseContext?.isAuthenticated
+  });
+
+  const loadDepartments = useCallback(async () => {
+    if (!agencyId) {
+      console.log('[useDepartments] Skipping load - no agencyId');
+      return;
+    }
+
+    console.log('[useDepartments] Starting load with agencyId:', agencyId);
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log('[useDepartments] Calling RPC get_showcase_departments...');
+      const { data, error: rpcError } = await supabase.rpc('get_showcase_departments', { p_agency_id: agencyId });
+
+      console.log('[useDepartments] RPC response:', { data, error: rpcError, dataLength: data?.length });
+
+      if (rpcError) throw rpcError;
+
+      setDepartments(data || []);
+      console.log('[useDepartments] ✅ Successfully loaded', data?.length || 0, 'departments');
+    } catch (err) {
+      console.error('[useDepartments] ❌ Error loading departments:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load departments');
+    } finally {
+      setLoading(false);
+    }
+  }, [agencyId]);
+
+  useEffect(() => {
+    if (agencyId) {
+      loadDepartments();
+    } else {
+      setLoading(false);
+      setError('No agency ID available');
+      console.log('[useDepartments] No agencyId available, showcaseContext:', showcaseContext);
+    }
+  }, [agencyId, loadDepartments]);
+
+  return { departments, loading, error, reload: loadDepartments };
+};
+
+export const useDepartmentPersonnel = (departmentId?: string) => {
+  const showcaseContext = SHOWCASE_MODE ? useShowcase() : null;
+  const [personnel, setPersonnel] = useState<DepartmentPersonnel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const agencyId = SHOWCASE_MODE ? showcaseContext?.mockAgencyId : null;
+
+  const loadPersonnel = useCallback(async () => {
+    if (!agencyId) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('get_showcase_department_personnel', {
+        p_agency_id: agencyId,
+        p_department_id: departmentId || null
+      });
+
+      if (rpcError) throw rpcError;
+
+      setPersonnel(data || []);
+      console.log('[useDepartmentPersonnel] Loaded personnel:', data?.length || 0);
+    } catch (err) {
+      console.error('[useDepartmentPersonnel] Error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load personnel');
+    } finally {
+      setLoading(false);
+    }
+  }, [agencyId, departmentId]);
+
+  useEffect(() => {
+    if (agencyId) {
+      loadPersonnel();
+    } else {
+      setLoading(false);
+    }
+  }, [agencyId, loadPersonnel]);
+
+  return { personnel, loading, error, reload: loadPersonnel };
+};
+
+export const useDepartmentAssignments = (departmentId?: string, assignedToId?: string) => {
+  const showcaseContext = SHOWCASE_MODE ? useShowcase() : null;
+  const [assignments, setAssignments] = useState<DepartmentAssignment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const agencyId = SHOWCASE_MODE ? showcaseContext?.mockAgencyId : null;
+
+  const loadAssignments = useCallback(async () => {
+    if (!agencyId) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('get_showcase_department_assignments', {
+        p_agency_id: agencyId,
+        p_department_id: departmentId || null,
+        p_assigned_to_id: assignedToId || null
+      });
+
+      if (rpcError) throw rpcError;
+
+      setAssignments(data || []);
+      console.log('[useDepartmentAssignments] Loaded assignments:', data?.length || 0);
+    } catch (err) {
+      console.error('[useDepartmentAssignments] Error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load assignments');
+    } finally {
+      setLoading(false);
+    }
+  }, [agencyId, departmentId, assignedToId]);
+
+  useEffect(() => {
+    if (agencyId) {
+      loadAssignments();
+    } else {
+      setLoading(false);
+    }
+  }, [agencyId, loadAssignments]);
+
+  return { assignments, loading, error, reload: loadAssignments };
+};
+
+export const useDepartmentSchedules = (departmentId?: string, shiftDate?: string) => {
+  const showcaseContext = SHOWCASE_MODE ? useShowcase() : null;
+  const [schedules, setSchedules] = useState<DepartmentSchedule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const agencyId = SHOWCASE_MODE ? showcaseContext?.mockAgencyId : null;
+
+  const loadSchedules = useCallback(async () => {
+    if (!agencyId) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('get_showcase_department_schedules', {
+        p_agency_id: agencyId,
+        p_department_id: departmentId || null,
+        p_shift_date: shiftDate || new Date().toISOString().split('T')[0]
+      });
+
+      if (rpcError) throw rpcError;
+
+      setSchedules(data || []);
+      console.log('[useDepartmentSchedules] Loaded schedules:', data?.length || 0);
+    } catch (err) {
+      console.error('[useDepartmentSchedules] Error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load schedules');
+    } finally {
+      setLoading(false);
+    }
+  }, [agencyId, departmentId, shiftDate]);
+
+  useEffect(() => {
+    if (agencyId) {
+      loadSchedules();
+    } else {
+      setLoading(false);
+    }
+  }, [agencyId, loadSchedules]);
+
+  return { schedules, loading, error, reload: loadSchedules };
+};

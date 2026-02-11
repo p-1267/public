@@ -1,0 +1,140 @@
+/*
+  # Seed Without Vitals (Simplified)
+  
+  Creates minimal comprehensive seed without vital signs table
+*/
+
+CREATE OR REPLACE FUNCTION seed_all_showcase_data()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_agency_id uuid;
+  v_resident_ids uuid[];
+  v_category_nursing uuid;
+  v_category_housekeeping uuid;
+  v_category_kitchen uuid;
+  v_category_hygiene uuid;
+  v_template_morning_med uuid;
+  v_template_vitals uuid;
+  v_template_room_clean uuid;
+  v_template_breakfast uuid;
+  v_today date;
+  i integer;
+BEGIN
+  v_today := CURRENT_DATE;
+  v_agency_id := md5('showcase-agency-001')::uuid;
+  v_resident_ids := ARRAY[md5('showcase-resident-a')::uuid, md5('showcase-resident-b')::uuid];
+  
+  INSERT INTO agencies (id, name, status, operating_mode, metadata, created_at, updated_at)
+  VALUES (v_agency_id, 'Demo Care Agency', 'active', 'AGENCY',
+    '{"demo": true, "total_staff": 8, "total_residents": 2}'::jsonb, now(), now())
+  ON CONFLICT (id) DO NOTHING;
+  
+  INSERT INTO residents (id, agency_id, full_name, date_of_birth, status, metadata, created_at, updated_at)
+  VALUES
+    (v_resident_ids[1], v_agency_id, 'Pat Anderson', '1948-03-15', 'active',
+     '{"floor": 1, "unit": "East Wing", "room": "102"}'::jsonb, now(), now()),
+    (v_resident_ids[2], v_agency_id, 'Jordan Martinez', '1942-07-22', 'active',
+     '{"floor": 2, "unit": "West Wing", "room": "205"}'::jsonb, now(), now())
+  ON CONFLICT (id) DO NOTHING;
+  
+  INSERT INTO task_categories (agency_id, name, category_type, description, default_priority, requires_evidence, allows_skip, is_active, created_at, updated_at)
+  VALUES
+    (v_agency_id, 'NURSING', 'clinical', 'Clinical nursing tasks', 'high', true, false, true, now(), now()),
+    (v_agency_id, 'HOUSEKEEPING', 'housekeeping', 'Room cleaning', 'medium', false, true, true, now(), now()),
+    (v_agency_id, 'KITCHEN', 'cooking', 'Meal delivery', 'high', false, false, true, now(), now()),
+    (v_agency_id, 'HYGIENE', 'hygiene', 'Personal care', 'high', true, false, true, now(), now())
+  ON CONFLICT (agency_id, name) DO NOTHING;
+  
+  SELECT id INTO v_category_nursing FROM task_categories WHERE agency_id = v_agency_id AND name = 'NURSING' LIMIT 1;
+  SELECT id INTO v_category_housekeeping FROM task_categories WHERE agency_id = v_agency_id AND name = 'HOUSEKEEPING' LIMIT 1;
+  SELECT id INTO v_category_kitchen FROM task_categories WHERE agency_id = v_agency_id AND name = 'KITCHEN' LIMIT 1;
+  SELECT id INTO v_category_hygiene FROM task_categories WHERE agency_id = v_agency_id AND name = 'HYGIENE' LIMIT 1;
+  
+  INSERT INTO task_templates (agency_id, category_id, template_name, description, default_duration_minutes, default_priority, is_active, created_at)
+  VALUES
+    (v_agency_id, v_category_nursing, 'Morning Medication', 'Administer morning medications', 15, 'high', true, now()),
+    (v_agency_id, v_category_nursing, 'Vital Signs Check', 'Monitor vital signs', 10, 'medium', true, now()),
+    (v_agency_id, v_category_housekeeping, 'Room Cleaning', 'Clean and sanitize room', 30, 'medium', true, now()),
+    (v_agency_id, v_category_kitchen, 'Breakfast Delivery', 'Deliver breakfast', 10, 'high', true, now())
+  ON CONFLICT (agency_id, template_name) DO NOTHING;
+  
+  SELECT id INTO v_template_morning_med FROM task_templates WHERE agency_id = v_agency_id AND template_name = 'Morning Medication' LIMIT 1;
+  SELECT id INTO v_template_vitals FROM task_templates WHERE agency_id = v_agency_id AND template_name = 'Vital Signs Check' LIMIT 1;
+  SELECT id INTO v_template_room_clean FROM task_templates WHERE agency_id = v_agency_id AND template_name = 'Room Cleaning' LIMIT 1;
+  SELECT id INTO v_template_breakfast FROM task_templates WHERE agency_id = v_agency_id AND template_name = 'Breakfast Delivery' LIMIT 1;
+  
+  FOR i IN 1..2 LOOP
+    INSERT INTO tasks (agency_id, resident_id, task_name, department, priority, scheduled_start, scheduled_end, 
+                       duration_minutes, state, category_id, template_id, responsibility_role, requires_evidence, 
+                       evidence_submitted, supervisor_acknowledged, is_emergency, is_blocked, created_at, updated_at)
+    VALUES 
+      (v_agency_id, v_resident_ids[i], 'Morning Medication', 'NURSING', 'high',
+       v_today + interval '8 hours', v_today + interval '8 hours 15 minutes', 15, 'due',
+       v_category_nursing, v_template_morning_med, 'CAREGIVER', true, false, false, false, false, now(), now()),
+      (v_agency_id, v_resident_ids[i], 'Vital Signs Check', 'NURSING', 'medium',
+       v_today + interval '9 hours', v_today + interval '9 hours 10 minutes', 10, 'due',
+       v_category_nursing, v_template_vitals, 'CAREGIVER', true, false, false, false, false, now(), now()),
+      (v_agency_id, v_resident_ids[i], 'Breakfast Delivery', 'KITCHEN', 'high',
+       v_today + interval '7 hours 30 minutes', v_today + interval '7 hours 40 minutes', 10, 'completed',
+       v_category_kitchen, v_template_breakfast, 'CAREGIVER', false, false, true, false, false, now(), now()),
+      (v_agency_id, v_resident_ids[i], 'Room Cleaning', 'HOUSEKEEPING', 'medium',
+       v_today + interval '10 hours', v_today + interval '10 hours 30 minutes', 30, 'scheduled',
+       v_category_housekeeping, v_template_room_clean, 'CAREGIVER', false, false, false, false, false, now(), now()),
+      (v_agency_id, v_resident_ids[i], 'Lunch Delivery', 'KITCHEN', 'high',
+       v_today + interval '12 hours', v_today + interval '12 hours 10 minutes', 10, 'scheduled',
+       v_category_kitchen, v_template_breakfast, 'CAREGIVER', false, false, false, false, false, now(), now()),
+      (v_agency_id, v_resident_ids[i], 'Evening Medication', 'NURSING', 'high',
+       v_today + interval '18 hours', v_today + interval '18 hours 15 minutes', 15, 'scheduled',
+       v_category_nursing, v_template_morning_med, 'CAREGIVER', true, false, false, false, false, now(), now());
+  END LOOP;
+  
+  UPDATE tasks SET actual_start = scheduled_start - interval '2 minutes', actual_end = scheduled_end - interval '2 minutes', outcome = 'success'
+  WHERE agency_id = v_agency_id AND state = 'completed';
+  
+  INSERT INTO intelligence_signals (signal_id, resident_id, agency_id, category, title, description, reasoning, severity,
+                                    detected_at, requires_human_action, suggested_actions, data_source, dismissed, created_at)
+  VALUES
+    ('sig-med-timing-001', v_resident_ids[1], v_agency_id, 'PREDICTIVE', 'Unusual Medication Timing',
+     'Consistent 15-minute delays in morning medication administration.',
+     'Pattern shows medication scheduled for 08:00 delivered at 08:15, occurring 3 times this week.',
+     'MEDIUM', now() - interval '2 hours', true,
+     ARRAY['Review caregiver morning schedule', 'Consider adjusting medication time window'],
+     ARRAY['task_completion_log', 'schedule_analysis'], false, now()),
+    ('sig-nutrition-001', v_resident_ids[1], v_agency_id, 'REACTIVE', 'Declining Meal Intake',
+     'Meal intake decreased from 90% to 65% over past 7 days.',
+     'Downward trend in meal consumption may indicate appetite changes or health concerns.',
+     'HIGH', now() - interval '1 hour', true,
+     ARRAY['Consult with dietitian', 'Review meal preferences', 'Monitor weight trends'],
+     ARRAY['meal_intake_log', 'nutrition_tracker'], false, now()),
+    ('sig-mobility-002', v_resident_ids[2], v_agency_id, 'PROACTIVE', 'Improved Mobility',
+     'Physical therapy showing 18% improvement in mobility score.',
+     'Mobility score improved from 7.2 to 8.5 over 2-week period.',
+     'LOW', now() - interval '30 minutes', false,
+     ARRAY['Continue current PT regimen', 'Consider graduated activity increase'],
+     ARRAY['physical_therapy_log', 'mobility_assessment'], false, now());
+  
+  INSERT INTO brain_state (resident_id, current_state, previous_state, state_reason, confidence_score, risk_level,
+                           active_alerts, blocked_actions, required_acknowledgments, last_assessment_time,
+                           metadata, version, created_at, updated_at)
+  VALUES
+    (v_resident_ids[1], 'monitoring_required', 'stable',
+     'Multiple intelligence signals detected requiring attention', 0.82, 'B', 2, '[]'::jsonb, '[]'::jsonb,
+     now(), '{"signal_count": 2}'::jsonb, 1, now(), now()),
+    (v_resident_ids[2], 'stable', 'stable',
+     'All indicators normal, positive trends observed', 0.95, 'A', 0, '[]'::jsonb, '[]'::jsonb,
+     now(), '{"positive_signals": 1}'::jsonb, 1, now(), now());
+  
+  RETURN jsonb_build_object(
+    'success', true, 'message', 'Showcase data seeded successfully',
+    'agency_id', v_agency_id, 'residents', 2,
+    'tasks', (SELECT COUNT(*) FROM tasks WHERE agency_id = v_agency_id),
+    'categories', (SELECT COUNT(*) FROM task_categories WHERE agency_id = v_agency_id),
+    'signals', (SELECT COUNT(*) FROM intelligence_signals WHERE resident_id = ANY(v_resident_ids)),
+    'brain_states', (SELECT COUNT(*) FROM brain_state WHERE resident_id = ANY(v_resident_ids))
+  );
+END;
+$$;

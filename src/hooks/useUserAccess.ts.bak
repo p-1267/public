@@ -1,0 +1,252 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+
+export interface Membership {
+  id: string;
+  resident_id: string;
+  resident_name: string;
+  role_name: string;
+  granted_by_name: string;
+  granted_at: string;
+  is_active: boolean;
+  revoked_at: string | null;
+  revoked_reason: string | null;
+}
+
+export interface GrantAccessParams {
+  target_user_id: string;
+  resident_id: string;
+  role_id: string;
+  permissions?: Record<string, any>;
+}
+
+export interface GrantTemporaryAccessParams {
+  target_user_id: string;
+  resident_id: string;
+  starts_at: string;
+  ends_at: string;
+  permissions: Record<string, any>;
+  reason: string;
+}
+
+export function useUserAccess(userId?: string) {
+  const [memberships, setMemberships] = useState<Membership[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchMemberships = useCallback(async () => {
+    if (DEMO_MODE) {
+      setMemberships([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('list_user_memberships', {
+        p_user_id: userId || null
+      });
+
+      if (rpcError) throw rpcError;
+
+      if (data && data.success) {
+        setMemberships(data.memberships || []);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch memberships');
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
+  const grantAccess = useCallback(async (params: GrantAccessParams) => {
+    if (DEMO_MODE) {
+      throw new Error('Demo Mode: Access grant is disabled');
+    }
+
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('grant_user_access', {
+        p_target_user_id: params.target_user_id,
+        p_resident_id: params.resident_id,
+        p_role_id: params.role_id,
+        p_permissions: JSON.stringify(params.permissions || {})
+      });
+
+      if (rpcError) throw rpcError;
+
+      if (data && !data.success) {
+        throw new Error('Failed to grant access');
+      }
+
+      await fetchMemberships();
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to grant access';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, [fetchMemberships]);
+
+  const revokeAccess = useCallback(async (targetUserId: string, reason: string) => {
+    if (DEMO_MODE) {
+      throw new Error('Demo Mode: Access revocation is disabled');
+    }
+
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('revoke_user_access', {
+        p_target_user_id: targetUserId,
+        p_reason: reason
+      });
+
+      if (rpcError) throw rpcError;
+
+      if (data && !data.success) {
+        throw new Error('Failed to revoke access');
+      }
+
+      await fetchMemberships();
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to revoke access';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, [fetchMemberships]);
+
+  const suspendUser = useCallback(async (targetUserId: string, reason: string) => {
+    if (DEMO_MODE) {
+      throw new Error('Demo Mode: User suspension is disabled');
+    }
+
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('suspend_user_access', {
+        p_target_user_id: targetUserId,
+        p_reason: reason
+      });
+
+      if (rpcError) throw rpcError;
+
+      if (data && !data.success) {
+        throw new Error('Failed to suspend user');
+      }
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to suspend user';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const reactivateUser = useCallback(async (targetUserId: string) => {
+    if (DEMO_MODE) {
+      throw new Error('Demo Mode: User reactivation is disabled');
+    }
+
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('reactivate_user_access', {
+        p_target_user_id: targetUserId
+      });
+
+      if (rpcError) throw rpcError;
+
+      if (data && !data.success) {
+        throw new Error('Failed to reactivate user');
+      }
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to reactivate user';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const revokeMembership = useCallback(async (membershipId: string, reason: string) => {
+    if (DEMO_MODE) {
+      throw new Error('Demo Mode: Membership revocation is disabled');
+    }
+
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('revoke_membership', {
+        p_membership_id: membershipId,
+        p_reason: reason
+      });
+
+      if (rpcError) throw rpcError;
+
+      if (data && !data.success) {
+        throw new Error('Failed to revoke membership');
+      }
+
+      await fetchMemberships();
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to revoke membership';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, [fetchMemberships]);
+
+  const grantTemporaryAccess = useCallback(async (params: GrantTemporaryAccessParams) => {
+    if (DEMO_MODE) {
+      throw new Error('Demo Mode: Temporary access grant is disabled');
+    }
+
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('grant_temporary_access', {
+        p_target_user_id: params.target_user_id,
+        p_resident_id: params.resident_id,
+        p_starts_at: params.starts_at,
+        p_ends_at: params.ends_at,
+        p_permissions: JSON.stringify(params.permissions),
+        p_reason: params.reason
+      });
+
+      if (rpcError) throw rpcError;
+
+      if (data && !data.success) {
+        throw new Error('Failed to grant temporary access');
+      }
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to grant temporary access';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMemberships();
+  }, [fetchMemberships]);
+
+  return {
+    memberships,
+    loading,
+    error,
+    grantAccess,
+    revokeAccess,
+    suspendUser,
+    reactivateUser,
+    revokeMembership,
+    grantTemporaryAccess,
+    refresh: fetchMemberships
+  };
+}

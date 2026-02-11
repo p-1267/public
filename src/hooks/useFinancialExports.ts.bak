@@ -1,0 +1,301 @@
+import { useState, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+
+export function useFinancialExports() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const checkPhase25Entry = useCallback(async () => {
+    if (DEMO_MODE) {
+      return { allowed: true, user_role: 'AGENCY_ADMIN', blocked_reasons: [] };
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('check_phase25_entry_gate');
+
+      if (rpcError) throw rpcError;
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to check Phase 25 entry';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const calculatePayrollPreview = useCallback(async (startDate: string, endDate: string) => {
+    if (DEMO_MODE) {
+      return {
+        success: true,
+        record_count: 0,
+        total_hours: 0,
+        total_amount: 0,
+        records: []
+      };
+    }
+
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('calculate_payroll_preview', {
+        p_start_date: startDate,
+        p_end_date: endDate
+      });
+
+      if (rpcError) throw rpcError;
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to calculate payroll';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const calculateBillingPreview = useCallback(async (startDate: string, endDate: string) => {
+    if (DEMO_MODE) {
+      return {
+        success: true,
+        record_count: 0,
+        total_units: 0,
+        total_amount: 0,
+        records: []
+      };
+    }
+
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('calculate_billing_preview', {
+        p_start_date: startDate,
+        p_end_date: endDate
+      });
+
+      if (rpcError) throw rpcError;
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to calculate billing';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const generatePayrollExport = useCallback(async (params: {
+    startDate: string;
+    endDate: string;
+    format: string;
+    jurisdiction: string;
+  }) => {
+    if (DEMO_MODE) {
+      throw new Error('Demo Mode: Cannot generate payroll export');
+    }
+
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('generate_payroll_export', {
+        p_start_date: params.startDate,
+        p_end_date: params.endDate,
+        p_format: params.format,
+        p_jurisdiction: params.jurisdiction
+      });
+
+      if (rpcError) throw rpcError;
+      if (data && !data.success) throw new Error(data.message || 'Failed to generate export');
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to generate payroll export';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const generateBillingExport = useCallback(async (params: {
+    startDate: string;
+    endDate: string;
+    format: string;
+  }) => {
+    if (DEMO_MODE) {
+      throw new Error('Demo Mode: Cannot generate billing export');
+    }
+
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('generate_billing_export', {
+        p_start_date: params.startDate,
+        p_end_date: params.endDate,
+        p_format: params.format
+      });
+
+      if (rpcError) throw rpcError;
+      if (data && !data.success) throw new Error(data.message || 'Failed to generate export');
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to generate billing export';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const sealExport = useCallback(async (exportId: string, exportType: string) => {
+    if (DEMO_MODE) {
+      throw new Error('Demo Mode: Cannot seal export');
+    }
+
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('seal_export', {
+        p_export_id: exportId,
+        p_export_type: exportType
+      });
+
+      if (rpcError) throw rpcError;
+      if (data && !data.success) throw new Error(data.message || 'Failed to seal export');
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to seal export';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const getExports = useCallback(async (exportType: string, limit: number = 50) => {
+    if (DEMO_MODE) {
+      return {
+        success: true,
+        exports: [],
+        export_count: 0
+      };
+    }
+
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('get_exports', {
+        p_export_type: exportType,
+        p_limit: limit
+      });
+
+      if (rpcError) throw rpcError;
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to get exports';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const createFinancialAdjustment = useCallback(async (params: {
+    adjustmentType: string;
+    originalExportId: string;
+    originalRecordId: string;
+    adjustmentReason: string;
+    originalValue: any;
+    adjustedValue: any;
+    amountDelta: number;
+  }) => {
+    if (DEMO_MODE) {
+      throw new Error('Demo Mode: Cannot create adjustment');
+    }
+
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('create_financial_adjustment', {
+        p_adjustment_type: params.adjustmentType,
+        p_original_export_id: params.originalExportId,
+        p_original_record_id: params.originalRecordId,
+        p_adjustment_reason: params.adjustmentReason,
+        p_original_value: params.originalValue,
+        p_adjusted_value: params.adjustedValue,
+        p_amount_delta: params.amountDelta
+      });
+
+      if (rpcError) throw rpcError;
+      if (data && !data.success) throw new Error(data.message || 'Failed to create adjustment');
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to create adjustment';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const approveFinancialAdjustment = useCallback(async (adjustmentId: string) => {
+    if (DEMO_MODE) {
+      throw new Error('Demo Mode: Cannot approve adjustment');
+    }
+
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('approve_financial_adjustment', {
+        p_adjustment_id: adjustmentId
+      });
+
+      if (rpcError) throw rpcError;
+      if (data && !data.success) throw new Error(data.message || 'Failed to approve adjustment');
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to approve adjustment';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  const getAdjustments = useCallback(async (exportId?: string, adjustmentType?: string) => {
+    if (DEMO_MODE) {
+      return {
+        success: true,
+        adjustments: [],
+        adjustment_count: 0
+      };
+    }
+
+    try {
+      setError(null);
+
+      const { data, error: rpcError } = await supabase.rpc('get_adjustments', {
+        p_export_id: exportId || null,
+        p_adjustment_type: adjustmentType || null
+      });
+
+      if (rpcError) throw rpcError;
+
+      return data;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to get adjustments';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  }, []);
+
+  return {
+    loading,
+    error,
+    checkPhase25Entry,
+    calculatePayrollPreview,
+    calculateBillingPreview,
+    generatePayrollExport,
+    generateBillingExport,
+    sealExport,
+    getExports,
+    createFinancialAdjustment,
+    approveFinancialAdjustment,
+    getAdjustments
+  };
+}
