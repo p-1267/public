@@ -56,11 +56,15 @@ export function ShowcaseScenarioSelector() {
 
       console.log('[SCENARIO_SEED_OK]', seedData);
 
-      // Navigate to role home - pass scenario ID directly to avoid state timing issues
-      console.log('[SCENARIO_NAVIGATE] calling advanceToNextStep with scenarioId=', scenarioId);
+      // Update showcase context state (scenario, role, step)
+      setScenario(scenarioId);
       advanceToNextStep(scenarioId);
+
+      // Force navigation via hash - this triggers App.tsx re-render with new route
+      console.log('[NAVIGATE] to=brain-monitor');
+      window.location.hash = 'brain-monitor';
+
       setIsSeeding(false);
-      console.log('[SCENARIO_NAVIGATE] navigation complete');
     } catch (err: any) {
       console.error('[ShowcaseScenarioSelector] Exception:', err);
       setSeedError(`Error: ${err.message}`);

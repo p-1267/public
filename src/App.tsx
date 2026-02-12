@@ -39,7 +39,8 @@ function App() {
   const { isAuthenticated, currentRole, currentScenario, currentStep } = useShowcase()
   const [currentRoute, setCurrentRoute] = useState('')
 
-  console.log('[App] Rendering - currentStep:', currentStep, 'currentRole:', currentRole, 'currentScenario:', currentScenario?.id)
+  console.log('[APP_RENDER] currentStep=', currentStep, 'currentRole=', currentRole, 'currentScenario=', currentScenario?.id)
+  console.log('[LOCATION] pathname=', window.location.pathname, 'hash=', window.location.hash)
 
   useEffect(() => {
     const checkHash = () => {
