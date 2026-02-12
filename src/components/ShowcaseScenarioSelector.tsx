@@ -1,13 +1,112 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useShowcase } from '../contexts/ShowcaseContext';
 import { SHOWCASE_SCENARIOS } from '../config/showcase';
 import { SCENARIO_META } from '../config/scenarioArchitecture';
+import { supabase } from '../lib/supabase';
 
 export function ShowcaseScenarioSelector() {
   const { currentScenario, setScenario, advanceToNextStep } = useShowcase();
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [seedError, setSeedError] = useState<string | null>(null);
 
   const handleDirectAccess = (route: string) => {
     window.location.hash = route;
+  };
+
+  const handleScenarioClick = async (scenarioId: string) => {
+    console.log('[ShowcaseScenarioSelector] Scenario clicked:', scenarioId);
+    setIsSeeding(true);
+    setSeedError(null);
+
+    try {
+      // Map scenario ID to care context configuration
+      const contextConfig = getContextConfig(scenarioId);
+
+      // Get or create resident (use fixed showcase resident ID)
+      const residentId = 'b0000000-0000-0000-0000-000000000001';
+
+      // Create or update care_context
+      const { data: contextData, error: contextError } = await supabase.rpc('create_or_update_care_context', {
+        p_resident_id: residentId,
+        p_management_mode: contextConfig.management_mode,
+        p_care_setting: contextConfig.care_setting,
+        p_service_model: contextConfig.service_model,
+        p_supervision_enabled: contextConfig.supervision_enabled,
+        p_agency_id: contextConfig.agency_id
+      });
+
+      if (contextError) {
+        console.error('[ShowcaseScenarioSelector] Context creation failed:', contextError);
+        setSeedError(`Failed to create care context: ${contextError.message}`);
+        setIsSeeding(false);
+        return;
+      }
+
+      console.log('[ShowcaseScenarioSelector] Care context created:', contextData);
+
+      // Seed data for this context
+      const { data: seedData, error: seedError } = await supabase.rpc('seed_active_context', {
+        p_care_context_id: contextData
+      });
+
+      if (seedError) {
+        console.error('[ShowcaseScenarioSelector] Seed failed:', seedError);
+        setSeedError(`Failed to seed data: ${seedError.message}`);
+        setIsSeeding(false);
+        return;
+      }
+
+      console.log('[ShowcaseScenarioSelector] Seed complete:', seedData);
+
+      // Navigate to role home
+      setScenario(scenarioId);
+      advanceToNextStep();
+      setIsSeeding(false);
+    } catch (err: any) {
+      console.error('[ShowcaseScenarioSelector] Exception:', err);
+      setSeedError(`Error: ${err.message}`);
+      setIsSeeding(false);
+    }
+  };
+
+  const getContextConfig = (scenarioId: string) => {
+    const agencyId = 'a0000000-0000-0000-0000-000000000010'; // Fixed showcase agency
+
+    switch (scenarioId) {
+      case 'agency-managed-care':
+        return {
+          management_mode: 'AGENCY_MANAGED',
+          care_setting: 'FACILITY',
+          service_model: 'AGENCY_FACILITY',
+          supervision_enabled: true,
+          agency_id: agencyId
+        };
+      case 'home-care-hybrid':
+        return {
+          management_mode: 'FAMILY_MANAGED',
+          care_setting: 'IN_HOME',
+          service_model: 'DIRECT_HIRE',
+          supervision_enabled: false,
+          agency_id: null
+        };
+      case 'independent-senior-family':
+        return {
+          management_mode: 'SELF',
+          care_setting: 'IN_HOME',
+          service_model: 'NONE',
+          supervision_enabled: false,
+          agency_id: null
+        };
+      default:
+        // Default to SELF mode
+        return {
+          management_mode: 'SELF',
+          care_setting: 'IN_HOME',
+          service_model: 'NONE',
+          supervision_enabled: false,
+          agency_id: null
+        };
+    }
   };
 
   return (
@@ -119,12 +218,9 @@ export function ShowcaseScenarioSelector() {
                 return (
                   <button
                     key={scenario.id}
-                    onClick={() => {
-                      console.log('[ShowcaseScenarioSelector] Button clicked for:', scenario.id, scenario.name);
-                      setScenario(scenario.id);
-                      advanceToNextStep();
-                    }}
-                    className="text-left p-6 border-2 border-gray-300 hover:border-gray-900 transition-colors bg-white"
+                    onClick={() => handleScenarioClick(scenario.id)}
+                    disabled={isSeeding}
+                    className="text-left p-6 border-2 border-gray-300 hover:border-gray-900 transition-colors bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <h3 className="text-lg font-bold text-gray-900 mb-3">
                       {scenario.name}
@@ -204,6 +300,22 @@ export function ShowcaseScenarioSelector() {
               </div>
             </button>
           </div>
+
+          {isSeeding && (
+            <div className="p-5 bg-blue-50 border border-blue-200 mb-6">
+              <div className="flex items-center">
+                <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full mr-3"></div>
+                <span className="text-sm font-medium text-blue-900">Creating care context and seeding database...</span>
+              </div>
+            </div>
+          )}
+
+          {seedError && (
+            <div className="p-5 bg-red-50 border border-red-200 mb-6">
+              <h4 className="font-semibold text-red-900 mb-2">Error</h4>
+              <p className="text-sm text-red-800">{seedError}</p>
+            </div>
+          )}
 
           <div className="p-5 bg-gray-50 border border-gray-200">
             <h4 className="font-semibold text-gray-900 mb-3">
