@@ -9,9 +9,6 @@ import { OperationalRealityShowcase } from './components/showcase/OperationalRea
 import { ShowcaseDashboard } from './components/showcase/ShowcaseDashboard'
 import { CaregiverHome } from './components/CaregiverHome'
 import { SupervisorHome } from './components/SupervisorHome'
-import { SeniorHome } from './components/SeniorHome'
-import { FamilyHome } from './components/FamilyHome'
-import { AgencyAdminHome } from './components/AgencyAdminHome'
 import { BrainProofScreen } from './components/BrainProofScreen'
 import { BrainProofWithLevel4 } from './components/BrainProofWithLevel4'
 import { CaregiverCognitiveView } from './components/cognitive/CaregiverCognitiveView'
@@ -256,54 +253,10 @@ function App() {
 
   // SHOWCASE_MODE: State-driven routing (no hash dependency)
   if (SHOWCASE_MODE && !currentRoute) {
-    console.log('[App.tsx SHOWCASE ROUTING]', { SHOWCASE_MODE, currentRoute, currentStep, currentRole, currentScenario: currentScenario?.id })
     if (currentStep === 'SCENARIO_SELECT') {
       return <ShowcaseScenarioSelector />
     }
 
-    // Render role-specific home (not HostShell tabs)
-    if (currentRole === 'SENIOR') {
-      return (
-        <>
-          <ShowcaseHomeButton />
-          <SeniorHome />
-        </>
-      )
-    }
-    if (currentRole === 'FAMILY_ADMIN' || currentRole === 'FAMILY_VIEWER') {
-      return (
-        <>
-          <ShowcaseHomeButton />
-          <FamilyHome />
-        </>
-      )
-    }
-    if (currentRole === 'CAREGIVER') {
-      return (
-        <>
-          <ShowcaseHomeButton />
-          <CaregiverHome />
-        </>
-      )
-    }
-    if (currentRole === 'SUPERVISOR') {
-      return (
-        <>
-          <ShowcaseHomeButton />
-          <SupervisorHome />
-        </>
-      )
-    }
-    if (currentRole === 'AGENCY_ADMIN') {
-      return (
-        <>
-          <ShowcaseHomeButton />
-          <AgencyAdminHome />
-        </>
-      )
-    }
-
-    // Fallback: no role set yet
     const remountKey = `${currentRole || 'none'}`
     return (
       <>

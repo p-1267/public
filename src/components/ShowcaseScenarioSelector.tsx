@@ -177,7 +177,8 @@ export function ShowcaseScenarioSelector() {
             <button
               onClick={() => {
                 console.log('[ShowcaseScenarioSelector] Launching Senior+Family interactive demo');
-                advanceToNextStep('independent-senior-family');
+                setScenario('independent-senior-family');
+                advanceToNextStep();
               }}
               className="w-full text-left p-6 border-2 border-gray-500 hover:border-gray-700 transition-colors bg-gradient-to-r from-gray-50 to-pink-50"
             >
