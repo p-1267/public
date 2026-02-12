@@ -162,28 +162,16 @@ export function ShowcaseProvider({ children }: { children: ReactNode }) {
   };
 
   const advanceToNextStep = (scenarioIdOverride?: string) => {
-    console.log('[SHOWCASE_STATE] advanceToNextStep called, currentStep=', currentStep, 'currentScenario=', currentScenario?.id, 'override=', scenarioIdOverride);
-
-    // If scenario ID is provided, use it directly
     const scenario = scenarioIdOverride
       ? SHOWCASE_SCENARIOS.find(s => s.id === scenarioIdOverride)
       : currentScenario;
 
     if (scenario) {
-      console.log('[ShowcaseContext] ⚡ Advancing to', scenario.name);
-
-      // Set all state atomically - UI renders instantly
       setCurrentScenario(scenario);
       setCurrentStep('ROLE_INTERFACE');
       setCurrentRole(scenario.defaultRole);
       setIsAuthenticated(true);
       setSelectedResidentId('b0000000-0000-0000-0000-000000000001');
-      console.log('[SHOWCASE_STATE] currentStep changed to ROLE_INTERFACE, role=', scenario.defaultRole);
-
-      // Seed in background (non-blocking, idempotent)
-      seedScenarioDatabase();
-    } else {
-      console.warn('[SHOWCASE_STATE] advanceToNextStep failed: no scenario found');
     }
   };
 

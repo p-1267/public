@@ -39,8 +39,6 @@ function App() {
   const { isAuthenticated, currentRole, currentScenario, currentStep } = useShowcase()
   const [currentRoute, setCurrentRoute] = useState('')
 
-  console.log('[APP_RENDER] currentStep=', currentStep, 'currentRole=', currentRole, 'currentScenario=', currentScenario?.id)
-  console.log('[LOCATION] pathname=', window.location.pathname, 'hash=', window.location.hash)
 
   useEffect(() => {
     const checkHash = () => {
@@ -255,14 +253,10 @@ function App() {
 
   // SHOWCASE_MODE: State-driven routing (no hash dependency)
   if (SHOWCASE_MODE && !currentRoute) {
-    console.log('[APP_RENDER] SHOWCASE_MODE, currentStep=', currentStep, 'currentRole=', currentRole);
     if (currentStep === 'SCENARIO_SELECT') {
-      console.log('[APP_RENDER] Rendering ShowcaseScenarioSelector');
       return <ShowcaseScenarioSelector />
     }
 
-    // Scenario selected → render HostShell with role home
-    console.log('[APP_RENDER] Scenario active, rendering HostShell');
     const remountKey = `${currentRole || 'none'}`
     return (
       <>
@@ -293,12 +287,10 @@ function App() {
     )
   }
 
-  // Fallback: render HostShell
   const remountKey = SHOWCASE_MODE
     ? `${currentRole || 'none'}`
     : 'production'
 
-  console.log('[APP_RENDER] Fallback, rendering HostShell with key=', remountKey);
   return (
     <>
       {SHOWCASE_MODE && <ShowcaseNavPanel />}
