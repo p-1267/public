@@ -44,10 +44,8 @@ export function ShowcaseScenarioSelector() {
 
       console.log('[ShowcaseScenarioSelector] Care context created:', contextData);
 
-      // Seed data for this context
-      const { data: seedData, error: seedError } = await supabase.rpc('seed_active_context', {
-        p_care_context_id: contextData
-      });
+      // Use existing seed_senior_family_scenario which is fully tested
+      const { data: seedData, error: seedError } = await supabase.rpc('seed_senior_family_scenario');
 
       if (seedError) {
         console.error('[ShowcaseScenarioSelector] Seed failed:', seedError);
