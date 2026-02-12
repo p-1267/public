@@ -210,8 +210,7 @@ export function ShowcaseScenarioSelector() {
               Showcase Mode Notice
             </h4>
             <p className="text-sm text-gray-700 leading-relaxed">
-              This walkthrough explains how the system works. No data is written to the database.
-              No actions are executed. All interactions are simulated for demonstration purposes only.
+              All scenarios use real database operations with seeded data. Select a scenario to explore the full system capabilities with realistic workflows and intelligence features.
             </p>
           </div>
         </div>

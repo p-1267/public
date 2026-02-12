@@ -252,6 +252,27 @@ function App() {
     )
   }
 
+  // Default route: Show scenario selector landing page
+  if (!currentRoute || currentRoute === '') {
+    return <ShowcaseScenarioSelector />
+  }
+
+  // Brain State Monitor accessible via specific route
+  if (currentRoute === 'brain-monitor') {
+    const remountKey = SHOWCASE_MODE
+      ? `${currentRole || 'none'}`
+      : 'production'
+
+    return (
+      <>
+        {SHOWCASE_MODE && <ShowcaseNavPanel />}
+        {SHOWCASE_MODE && <ShowcaseHomeButton />}
+        <HostShell key={remountKey} />
+      </>
+    )
+  }
+
+  // Persona-specific routes (when in SHOWCASE_MODE with role selected)
   if (SHOWCASE_MODE) {
     if (currentStep === 'SCENARIO_SELECT') {
       return <ShowcaseScenarioSelector />
