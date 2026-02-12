@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { AIAssistPanel } from './AIAssistPanel';
-import { AIContext } from '../services/mockAIEngine';
+
+interface AIContext {
+  type: string;
+  residentId?: string;
+  [key: string]: any;
+}
 
 interface AIFloatingButtonProps {
   context: AIContext;

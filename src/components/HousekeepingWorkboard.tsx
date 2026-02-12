@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
-import { OperationalDataGenerator, OperationalResident } from '../services/operationalDataGenerator';
 import { StaffMember, HousekeepingReport, OPERATING_MODE_CONFIGS } from '../types/operationalModel';
+
+interface OperationalResident {
+  id: string;
+  name: string;
+  [key: string]: any;
+}
 
 interface HousekeepingWorkboardProps {
   operatingMode: 'AGENCY' | 'HYBRID' | 'FAMILY_HOME';
@@ -12,13 +17,9 @@ export function HousekeepingWorkboard({ operatingMode }: HousekeepingWorkboardPr
   const [reports, setReports] = useState<HousekeepingReport[]>([]);
 
   useEffect(() => {
-    const generatedStaff = OperationalDataGenerator.generateStaff(operatingMode);
-    const generatedResidents = OperationalDataGenerator.generateResidents(operatingMode);
-    const generatedReports = OperationalDataGenerator.generateHousekeepingReports(generatedResidents, generatedStaff);
-
-    setStaff(generatedStaff.filter(s => s.department === 'HOUSEKEEPING'));
-    setResidents(generatedResidents);
-    setReports(generatedReports);
+    setStaff([]);
+    setResidents([]);
+    setReports([]);
   }, [operatingMode]);
 
   const completed = reports.filter(r => r.status === 'COMPLETED');

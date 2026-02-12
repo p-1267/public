@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
-import { OperationalDataGenerator, OperationalResident } from '../services/operationalDataGenerator';
 import { StaffMember, TaskCompletion, OPERATING_MODE_CONFIGS } from '../types/operationalModel';
+
+interface OperationalResident {
+  id: string;
+  name: string;
+  [key: string]: any;
+}
 
 interface NursingWorkboardProps {
   operatingMode: 'AGENCY' | 'HYBRID' | 'FAMILY_HOME';
@@ -12,13 +17,9 @@ export function NursingWorkboard({ operatingMode }: NursingWorkboardProps) {
   const [completions, setCompletions] = useState<TaskCompletion[]>([]);
 
   useEffect(() => {
-    const generatedStaff = OperationalDataGenerator.generateStaff(operatingMode);
-    const generatedResidents = OperationalDataGenerator.generateResidents(operatingMode);
-    const generatedCompletions = OperationalDataGenerator.generateTaskCompletions(generatedResidents, generatedStaff);
-
-    setStaff(generatedStaff.filter(s => s.department === 'NURSING'));
-    setResidents(generatedResidents);
-    setCompletions(generatedCompletions.filter(c => c.completed_by_department === 'NURSING'));
+    setStaff([]);
+    setResidents([]);
+    setCompletions([]);
   }, [operatingMode]);
 
   const nursingCompletions = completions.filter(c => c.completed_by_department === 'NURSING');

@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
-import { OperationalResident } from '../services/operationalDataGenerator';
 import { TaskCompletion } from '../types/operationalModel';
 import { useShowcase } from '../contexts/ShowcaseContext';
+
+interface OperationalResident {
+  id: string;
+  name: string;
+  [key: string]: any;
+}
 
 interface ResidentTimelineProps {
   residentId: string;

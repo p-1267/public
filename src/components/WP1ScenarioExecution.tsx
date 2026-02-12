@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
-import { runADayWorkflow } from '../services/scenarioRunner';
-import type { ScenarioResult } from '../services/scenarioRunner';
+
+interface ScenarioResult {
+  scenarioName: string;
+  passed: boolean;
+  steps: Array<{
+    name: string;
+    passed: boolean;
+    error?: string;
+  }>;
+  totalTime: number;
+}
 
 interface WP1ScenarioExecutionProps {
   agencyId: string;
@@ -15,8 +24,18 @@ export function WP1ScenarioExecution({ agencyId }: WP1ScenarioExecutionProps) {
     setResult(null);
 
     try {
-      const scenarioResult = await runADayWorkflow(agencyId);
-      setResult(scenarioResult);
+      setResult({
+        scenarioName: 'WP1: Run a Day',
+        passed: false,
+        steps: [
+          {
+            name: 'Scenario Initialization',
+            passed: false,
+            error: 'Scenario runner removed in production mode. Use database-backed seed RPCs instead.',
+          },
+        ],
+        totalTime: 0,
+      });
     } catch (error) {
       console.error('Scenario execution error:', error);
       setResult({

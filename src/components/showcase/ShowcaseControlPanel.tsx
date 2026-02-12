@@ -1,8 +1,4 @@
 import React, { useState } from 'react';
-import {
-  createAndSeedShowcaseAgency,
-  resetShowcaseAgency,
-} from '../../services/showcaseSeeder';
 import { WP1ScenarioExecution } from '../WP1ScenarioExecution';
 import { WP2AcceptanceTest } from '../WP2AcceptanceTest';
 import { verifyCapabilities } from '../../services/capabilityVerifier';
@@ -29,15 +25,7 @@ export function ShowcaseControlPanel({
   const handleCreateShowcase = async () => {
     setIsCreating(true);
     try {
-      const result = await createAndSeedShowcaseAgency(
-        `Showcase ${new Date().toLocaleString()}`
-      );
-      if (result.success && result.agencyId) {
-        onAgencySwitch(result.agencyId);
-        alert(`Showcase agency created successfully!\n\nCreated:\n- ${result.residents.length} residents\n- ${result.users.length} users\n- ${result.departments.length} departments\n- ${result.tasks.length} tasks`);
-      } else {
-        alert(`Error creating showcase: ${result.error}`);
-      }
+      alert('Showcase seeding is not available in production mode. Use database-backed seed RPCs instead.');
     } catch (error) {
       console.error('Error creating showcase:', error);
       alert('Failed to create showcase agency');
@@ -59,13 +47,7 @@ export function ShowcaseControlPanel({
 
     setIsResetting(true);
     try {
-      const success = await resetShowcaseAgency(currentAgencyId);
-      if (success) {
-        alert('Showcase agency reset successfully!');
-        window.location.reload();
-      } else {
-        alert('Failed to reset showcase agency');
-      }
+      alert('Showcase reset is not available in production mode. Use database-backed seed RPCs instead.');
     } catch (error) {
       console.error('Error resetting showcase:', error);
       alert('Failed to reset showcase agency');

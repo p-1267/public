@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
-import { mockAI, AIContext, AIRequest, AIResponse } from '../services/mockAIEngine';
+
+interface AIContext {
+  type: string;
+  residentId?: string;
+  [key: string]: any;
+}
+
+interface AIResponse {
+  text: string;
+  requiresReview: boolean;
+  disclaimer: string;
+}
 
 interface AIAssistPanelProps {
   context: AIContext;
@@ -23,15 +34,12 @@ export const AIAssistPanel: React.FC<AIAssistPanelProps> = ({
     setLoading(true);
     setResponse(null);
 
-    const request: AIRequest = {
-      mode,
-      context,
-      prompt,
-    };
-
     try {
-      const result = await mockAI.generateResponse(request);
-      setResponse(result);
+      setResponse({
+        text: 'AI assistance is not available in production mode. Please use database-backed intelligence features.',
+        requiresReview: true,
+        disclaimer: 'Mock AI removed for production.',
+      });
     } catch (error) {
       setResponse({
         text: 'Error generating response. Please try again.',

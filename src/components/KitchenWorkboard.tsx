@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
-import { OperationalResident } from '../services/operationalDataGenerator';
 import { StaffMember, KitchenReport, OPERATING_MODE_CONFIGS } from '../types/operationalModel';
 import { useShowcase } from '../contexts/ShowcaseContext';
+
+interface OperationalResident {
+  id: string;
+  name: string;
+  [key: string]: any;
+}
 
 interface KitchenWorkboardProps {
   operatingMode: 'AGENCY' | 'HYBRID' | 'FAMILY_HOME';

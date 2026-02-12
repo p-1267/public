@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { mockAI, AIContext } from '../services/mockAIEngine';
+
+interface AIContext {
+  type: string;
+  residentId?: string;
+  residentName?: string;
+  role?: string;
+  [key: string]: any;
+}
 
 type ReportType = 'INCIDENT' | 'FALL' | 'MEDICATION_ERROR' | 'MISSED_CARE' | 'INSURANCE_SUMMARY';
 type WizardStep = 'TYPE' | 'FACTS' | 'POLICY' | 'DRAFT' | 'FINALIZE';
@@ -31,14 +38,9 @@ export const AIDraftReportWizard: React.FC<AIDraftReportWizardProps> = ({
 
   const handleGenerateDraft = async () => {
     setLoading(true);
-    const response = await mockAI.generateResponse({
-      mode: 'DRAFT',
-      context,
-      reportType,
-      structuredFacts: facts,
-    });
-    setDraft(response.text);
-    setFinalText(response.text);
+    const stubText = `Report Type: ${reportType}\nResident: ${facts.resident}\nReported by: ${facts.actor}\nTimestamp: ${facts.timestamp}\n\nAI report generation is not available in production mode. Please use database-backed report templates.`;
+    setDraft(stubText);
+    setFinalText(stubText);
     setLoading(false);
     setStep('DRAFT');
   };

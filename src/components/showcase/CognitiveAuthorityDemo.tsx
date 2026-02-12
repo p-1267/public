@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { CognitiveJudgmentPanel } from '../CognitiveJudgmentPanel';
 import { RoleBoundaryEnforcement } from '../RoleBoundaryEnforcement';
 import { ResidentRiskJudgment } from '../ResidentRiskJudgment';
-import { generateRichScenarios, generateCognitiveJudgments } from '../../services/scenarioGenerator';
 
 export function CognitiveAuthorityDemo() {
   const [judgments, setJudgments] = useState<any[]>([]);
@@ -15,15 +14,7 @@ export function CognitiveAuthorityDemo() {
   const loadScenarios = async () => {
     setLoading(true);
     try {
-      const scenarios = await generateRichScenarios();
-      const generatedJudgments = await generateCognitiveJudgments(scenarios);
-
-      const enrichedJudgments = generatedJudgments.map((j: any) => ({
-        ...j,
-        severity: determineSeverity(j.judgment)
-      }));
-
-      setJudgments(enrichedJudgments);
+      setJudgments([]);
     } catch (err) {
       console.error('Failed to load scenarios:', err);
     } finally {

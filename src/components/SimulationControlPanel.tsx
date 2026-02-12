@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import { simulationEngine, SimulationResult } from '../services/simulationEngine';
+
+interface SimulationResult {
+  scenario: string;
+  success: boolean;
+  [key: string]: any;
+}
 
 export function SimulationControlPanel() {
   const [running, setRunning] = useState(false);
@@ -15,7 +20,7 @@ export function SimulationControlPanel() {
     setResults([]);
 
     try {
-      const result = await runner();
+      const result = { scenario: name, success: false, error: 'Simulation engine removed in production mode' };
       setResults([result]);
     } catch (error) {
       console.error('Simulation error:', error);
@@ -31,8 +36,7 @@ export function SimulationControlPanel() {
     setResults([]);
 
     try {
-      const allResults = await simulationEngine.runAllScenarios();
-      setResults(allResults);
+      setResults([]);
     } catch (error) {
       console.error('Simulation error:', error);
     } finally {
@@ -72,7 +76,7 @@ export function SimulationControlPanel() {
           title="Medication → Timeline → Notification"
           description="Records medication administration, updates senior timeline, queues family notification"
           flow={['Database Insert', 'Audit Log Entry', 'Notification Queue', 'Family Alert']}
-          onRun={() => runScenario('Medication', () => simulationEngine.runMedicationScenario())}
+          onRun={() => runScenario('Medication', async () => ({ scenario: 'Medication', success: false }))}
           disabled={running}
           color="#10b981"
         />
@@ -81,7 +85,7 @@ export function SimulationControlPanel() {
           title="Abnormal Vitals → Risk → Alert"
           description="Records vitals outside normal range, generates intelligence signal, sends caregiver alert"
           flow={['Vitals Recorded', 'Risk Detection', 'Signal Created', 'Caregiver Alert']}
-          onRun={() => runScenario('Vitals', () => simulationEngine.runAbnormalVitalsScenario())}
+          onRun={() => runScenario('Vitals', async () => ({ scenario: 'Vitals', success: false }))}
           disabled={running}
           color="#ef4444"
         />
@@ -90,7 +94,7 @@ export function SimulationControlPanel() {
           title="Task Difficulty → AI Feedback"
           description="Marks task as difficult, records AI learning input, generates pattern analysis signal"
           flow={['Task Status Update', 'Learning Input', 'Pattern Analysis', 'Supervisor Signal']}
-          onRun={() => runScenario('Task', () => simulationEngine.runTaskDifficultyScenario())}
+          onRun={() => runScenario('Task', async () => ({ scenario: 'Task', success: false }))}
           disabled={running}
           color="#8b5cf6"
         />
@@ -99,7 +103,7 @@ export function SimulationControlPanel() {
           title="Incident → Supervisor Visibility"
           description="Logs incident in audit trail, creates supervisor alert signal, queues notification"
           flow={['Audit Log Entry', 'Intelligence Signal', 'Supervisor Alert', 'Review Required']}
-          onRun={() => runScenario('Incident', () => simulationEngine.runIncidentScenario())}
+          onRun={() => runScenario('Incident', async () => ({ scenario: 'Incident', success: false }))}
           disabled={running}
           color="#f59e0b"
         />
