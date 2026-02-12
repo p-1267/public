@@ -17,6 +17,8 @@ import { SeniorMessagingPage } from './SeniorMessagingPage';
 import { SeniorSOSButton } from './SeniorSOSButton';
 import { SeniorAIAssistant } from './SeniorAIAssistant';
 import { SeniorOperatingModeSwitcher } from './SeniorOperatingModeSwitcher';
+import { CareContextProvider } from '../contexts/CareContextProvider';
+import { ResidentContextCard } from './ResidentContextCard';
 import { supabase } from '../lib/supabase';
 
 const SeniorHomeContent: React.FC = () => {
@@ -166,6 +168,12 @@ const SeniorHomeContent: React.FC = () => {
 
         {resident && (
           <SeniorOperatingModeSwitcher residentId={resident.id} />
+        )}
+
+        {selectedResidentId && (
+          <CareContextProvider residentId={selectedResidentId}>
+            <ResidentContextCard />
+          </CareContextProvider>
         )}
 
       <div style={{

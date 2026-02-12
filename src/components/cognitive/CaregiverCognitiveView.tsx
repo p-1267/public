@@ -5,8 +5,12 @@ import { IntelligenceSignalCard, IntelligenceSignal } from './IntelligenceSignal
 import { SituationCard, ResidentSituation } from './SituationCard';
 import { AllClearDisplay } from './AllClearDisplay';
 import { Level4ActivePanel } from '../Level4ActivePanel';
+import { CareContextProvider } from '../../contexts/CareContextProvider';
+import { ResidentContextCard } from '../ResidentContextCard';
+import { useShowcase } from '../../contexts/ShowcaseContext';
 
 export const CaregiverCognitiveView: React.FC = () => {
+  const { selectedResidentId } = useShowcase();
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [signals, setSignals] = useState<IntelligenceSignal[]>([]);
   const [situations, setSituations] = useState<ResidentSituation[]>([]);
@@ -140,6 +144,12 @@ export const CaregiverCognitiveView: React.FC = () => {
           <h1 className="text-3xl font-bold text-slate-900">Your Work</h1>
           <Level4ActivePanel />
         </div>
+
+        {selectedResidentId && (
+          <CareContextProvider residentId={selectedResidentId}>
+            <ResidentContextCard />
+          </CareContextProvider>
+        )}
 
         {allClear ? (
           <AllClearDisplay

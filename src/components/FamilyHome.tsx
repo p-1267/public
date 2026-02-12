@@ -14,6 +14,8 @@ import { FamilyMedicationsPage } from './showcase/FamilyMedicationsPage';
 import { SeniorAppointmentsPage } from './SeniorAppointmentsPage';
 import { SeniorDocumentsPage } from './SeniorDocumentsPage';
 import { FamilyAIAssistant } from './FamilyAIAssistant';
+import { CareContextProvider } from '../contexts/CareContextProvider';
+import { ResidentContextCard } from './ResidentContextCard';
 
 const FamilyHomeContent: React.FC = () => {
   const { selectedResidentId } = useShowcase();
@@ -144,6 +146,12 @@ const FamilyHomeContent: React.FC = () => {
           Family Member View
         </p>
       </div>
+
+      {selectedResidentId && (
+        <CareContextProvider residentId={selectedResidentId}>
+          <ResidentContextCard />
+        </CareContextProvider>
+      )}
 
       <div style={{
         background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
