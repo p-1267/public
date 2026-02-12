@@ -56,13 +56,8 @@ export function ShowcaseScenarioSelector() {
 
       console.log('[SCENARIO_SEED_OK]', seedData);
 
-      // Update showcase context state (scenario, role, step)
-      setScenario(scenarioId);
+      // Update showcase context state → triggers App.tsx re-render → HostShell
       advanceToNextStep(scenarioId);
-
-      // Force navigation via hash - this triggers App.tsx re-render with new route
-      console.log('[NAVIGATE] to=brain-monitor');
-      window.location.hash = 'brain-monitor';
 
       setIsSeeding(false);
     } catch (err: any) {

@@ -253,7 +253,27 @@ function App() {
     )
   }
 
-  // Default route: Show scenario selector landing page
+  // SHOWCASE_MODE: State-driven routing (no hash dependency)
+  if (SHOWCASE_MODE && !currentRoute) {
+    console.log('[APP_RENDER] SHOWCASE_MODE, currentStep=', currentStep, 'currentRole=', currentRole);
+    if (currentStep === 'SCENARIO_SELECT') {
+      console.log('[APP_RENDER] Rendering ShowcaseScenarioSelector');
+      return <ShowcaseScenarioSelector />
+    }
+
+    // Scenario selected → render HostShell with role home
+    console.log('[APP_RENDER] Scenario active, rendering HostShell');
+    const remountKey = `${currentRole || 'none'}`
+    return (
+      <>
+        <ShowcaseNavPanel />
+        <ShowcaseHomeButton />
+        <HostShell key={remountKey} />
+      </>
+    )
+  }
+
+  // Default route: Show scenario selector landing page (non-showcase mode)
   if (!currentRoute || currentRoute === '') {
     return <ShowcaseScenarioSelector />
   }
@@ -273,22 +293,12 @@ function App() {
     )
   }
 
-  // Persona-specific routes (when in SHOWCASE_MODE with role selected)
-  if (SHOWCASE_MODE) {
-    console.log('[APP_RENDER] SHOWCASE_MODE, currentStep=', currentStep, 'currentRole=', currentRole);
-    if (currentStep === 'SCENARIO_SELECT') {
-      console.log('[APP_RENDER] Rendering ShowcaseScenarioSelector');
-      return <ShowcaseScenarioSelector />
-    }
-    console.log('[APP_RENDER] currentStep is not SCENARIO_SELECT, will render HostShell');
-    // No loading screen - render UI immediately, seed DB in background
-  }
-
+  // Fallback: render HostShell
   const remountKey = SHOWCASE_MODE
     ? `${currentRole || 'none'}`
     : 'production'
 
-  console.log('[APP_RENDER] Rendering HostShell with key=', remountKey);
+  console.log('[APP_RENDER] Fallback, rendering HostShell with key=', remountKey);
   return (
     <>
       {SHOWCASE_MODE && <ShowcaseNavPanel />}
