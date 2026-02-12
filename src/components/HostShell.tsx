@@ -82,6 +82,7 @@ const adminTabs: { id: TabId; label: string; requiresPermission: string }[] = [
 ]
 
 export function HostShell() {
+  console.log('[HOSTSHELL_MOUNT] HostShell component mounting');
   const showcaseContext = SHOWCASE_MODE ? useShowcase() : null
   const { brainState, isLoading, error } = useBrainState()
   const { hasPermission } = useUserPermissions()
@@ -89,6 +90,8 @@ export function HostShell() {
   const initialTab = SHOWCASE_MODE && showcaseContext?.currentRole
     ? getInitialTabForRole(showcaseContext.currentRole)
     : 'dashboard'
+
+  console.log('[HOSTSHELL_MOUNT] currentRole=', showcaseContext?.currentRole, 'initialTab=', initialTab);
 
   const [activeTab, setActiveTab] = useState<TabId>(initialTab)
   const [userAgencyId, setUserAgencyId] = useState<string | null>(null)

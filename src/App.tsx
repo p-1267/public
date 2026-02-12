@@ -274,9 +274,12 @@ function App() {
 
   // Persona-specific routes (when in SHOWCASE_MODE with role selected)
   if (SHOWCASE_MODE) {
+    console.log('[APP_RENDER] SHOWCASE_MODE, currentStep=', currentStep, 'currentRole=', currentRole);
     if (currentStep === 'SCENARIO_SELECT') {
+      console.log('[APP_RENDER] Rendering ShowcaseScenarioSelector');
       return <ShowcaseScenarioSelector />
     }
+    console.log('[APP_RENDER] currentStep is not SCENARIO_SELECT, will render HostShell');
     // No loading screen - render UI immediately, seed DB in background
   }
 
@@ -284,6 +287,7 @@ function App() {
     ? `${currentRole || 'none'}`
     : 'production'
 
+  console.log('[APP_RENDER] Rendering HostShell with key=', remountKey);
   return (
     <>
       {SHOWCASE_MODE && <ShowcaseNavPanel />}

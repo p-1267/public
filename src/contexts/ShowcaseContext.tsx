@@ -55,7 +55,7 @@ interface ShowcaseContextType {
   executeShowcaseAction: (action: string, data: any) => Promise<any>;
   hasPermission: (permission: string) => boolean;
   showToast: (message: string) => void;
-  advanceToNextStep: () => void;
+  advanceToNextStep: (scenarioIdOverride?: string) => void;
   goBackToScenarioSelection: () => void;
   setOperatingMode: (mode: OperatingMode) => void;
 }
@@ -161,18 +161,29 @@ export function ShowcaseProvider({ children }: { children: ReactNode }) {
       });
   };
 
-  const advanceToNextStep = () => {
-    if (currentStep === 'SCENARIO_SELECT' && currentScenario) {
-      console.log('[ShowcaseContext] ⚡ Advancing to', currentScenario.name);
+  const advanceToNextStep = (scenarioIdOverride?: string) => {
+    console.log('[SHOWCASE_STATE] advanceToNextStep called, currentStep=', currentStep, 'currentScenario=', currentScenario?.id, 'override=', scenarioIdOverride);
 
-      // Set state immediately - UI renders instantly
+    // If scenario ID is provided, use it directly
+    const scenario = scenarioIdOverride
+      ? SHOWCASE_SCENARIOS.find(s => s.id === scenarioIdOverride)
+      : currentScenario;
+
+    if (scenario) {
+      console.log('[ShowcaseContext] ⚡ Advancing to', scenario.name);
+
+      // Set all state atomically - UI renders instantly
+      setCurrentScenario(scenario);
       setCurrentStep('ROLE_INTERFACE');
-      setCurrentRole(currentScenario.defaultRole);
+      setCurrentRole(scenario.defaultRole);
       setIsAuthenticated(true);
       setSelectedResidentId('b0000000-0000-0000-0000-000000000001');
+      console.log('[SHOWCASE_STATE] currentStep changed to ROLE_INTERFACE, role=', scenario.defaultRole);
 
       // Seed in background (non-blocking, idempotent)
       seedScenarioDatabase();
+    } else {
+      console.warn('[SHOWCASE_STATE] advanceToNextStep failed: no scenario found');
     }
   };
 
@@ -240,7 +251,7 @@ export function ShowcaseProvider({ children }: { children: ReactNode }) {
     if (scenario) {
       setCurrentScenario(scenario);
       setActionLog([]);
-      setCurrentStep('SCENARIO_SELECT');
+      // DO NOT reset currentStep here - advanceToNextStep will handle it
       console.log('[ShowcaseContext] Scenario set, ready to advance');
     } else {
       console.error('[ShowcaseContext] Scenario not found:', scenarioId);

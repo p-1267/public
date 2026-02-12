@@ -14,7 +14,7 @@ export function ShowcaseScenarioSelector() {
   };
 
   const handleScenarioClick = async (scenarioId: string) => {
-    console.log('[ShowcaseScenarioSelector] Scenario clicked:', scenarioId);
+    console.log('[SCENARIO_CLICK] scenarioId=', scenarioId);
     setIsSeeding(true);
     setSeedError(null);
 
@@ -42,7 +42,7 @@ export function ShowcaseScenarioSelector() {
         return;
       }
 
-      console.log('[ShowcaseScenarioSelector] Care context created:', contextData);
+      console.log('[SCENARIO_RPC_OK] care_context_id=', contextData);
 
       // Use existing seed_senior_family_scenario which is fully tested
       const { data: seedData, error: seedError } = await supabase.rpc('seed_senior_family_scenario');
@@ -54,12 +54,13 @@ export function ShowcaseScenarioSelector() {
         return;
       }
 
-      console.log('[ShowcaseScenarioSelector] Seed complete:', seedData);
+      console.log('[SCENARIO_SEED_OK]', seedData);
 
-      // Navigate to role home
-      setScenario(scenarioId);
-      advanceToNextStep();
+      // Navigate to role home - pass scenario ID directly to avoid state timing issues
+      console.log('[SCENARIO_NAVIGATE] calling advanceToNextStep with scenarioId=', scenarioId);
+      advanceToNextStep(scenarioId);
       setIsSeeding(false);
+      console.log('[SCENARIO_NAVIGATE] navigation complete');
     } catch (err: any) {
       console.error('[ShowcaseScenarioSelector] Exception:', err);
       setSeedError(`Error: ${err.message}`);
