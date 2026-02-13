@@ -73,23 +73,7 @@ export function ShowcaseScenarioSelector() {
     const agencyId = 'a0000000-0000-0000-0000-000000000010'; // Fixed showcase agency
 
     switch (scenarioId) {
-      case 'agency-managed-care':
-        return {
-          management_mode: 'AGENCY_MANAGED',
-          care_setting: 'FACILITY',
-          service_model: 'AGENCY_FACILITY',
-          supervision_enabled: true,
-          agency_id: agencyId
-        };
-      case 'home-care-hybrid':
-        return {
-          management_mode: 'FAMILY_MANAGED',
-          care_setting: 'IN_HOME',
-          service_model: 'DIRECT_HIRE',
-          supervision_enabled: false,
-          agency_id: null
-        };
-      case 'independent-senior-family':
+      case 'self-managed':
         return {
           management_mode: 'SELF',
           care_setting: 'IN_HOME',
@@ -97,8 +81,39 @@ export function ShowcaseScenarioSelector() {
           supervision_enabled: false,
           agency_id: null
         };
+      case 'family-managed':
+        return {
+          management_mode: 'FAMILY_MANAGED',
+          care_setting: 'IN_HOME',
+          service_model: 'NONE',
+          supervision_enabled: false,
+          agency_id: null
+        };
+      case 'direct-hire':
+        return {
+          management_mode: 'FAMILY_MANAGED',
+          care_setting: 'IN_HOME',
+          service_model: 'DIRECT_HIRE',
+          supervision_enabled: false,
+          agency_id: null
+        };
+      case 'agency-home-care':
+        return {
+          management_mode: 'AGENCY_MANAGED',
+          care_setting: 'IN_HOME',
+          service_model: 'AGENCY_HOME_CARE',
+          supervision_enabled: true,
+          agency_id: agencyId
+        };
+      case 'agency-facility':
+        return {
+          management_mode: 'AGENCY_MANAGED',
+          care_setting: 'FACILITY',
+          service_model: 'AGENCY_FACILITY',
+          supervision_enabled: true,
+          agency_id: agencyId
+        };
       default:
-        // Default to SELF mode
         return {
           management_mode: 'SELF',
           care_setting: 'IN_HOME',
@@ -207,9 +222,9 @@ export function ShowcaseScenarioSelector() {
 
           <div className="mb-8">
             <h2 className="text-lg font-bold text-gray-900 mb-4">
-              Care Scenarios (Full Walkthrough)
+              Select Scenario (A-E: Product Modes)
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {SHOWCASE_SCENARIOS.map((scenario) => {
                 const meta = SCENARIO_META[scenario.id as keyof typeof SCENARIO_META];
                 return (
@@ -217,41 +232,33 @@ export function ShowcaseScenarioSelector() {
                     key={scenario.id}
                     onClick={() => handleScenarioClick(scenario.id)}
                     disabled={isSeeding}
-                    className="text-left p-6 border-2 border-gray-300 hover:border-gray-900 transition-colors bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="text-left p-5 border-2 border-gray-300 hover:border-blue-600 transition-colors bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <h3 className="text-lg font-bold text-gray-900 mb-3">
+                    <h3 className="text-base font-bold text-gray-900 mb-2">
                       {scenario.name}
                     </h3>
-                    <p className="text-sm text-gray-700 mb-5 leading-relaxed">
+                    <p className="text-sm text-gray-700 mb-4 leading-relaxed">
                       {meta.description}
                     </p>
 
-                    <div className="space-y-3 text-sm mb-5">
+                    <div className="space-y-2 text-xs mb-4">
                       <div>
-                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Governance</div>
+                        <span className="font-semibold text-gray-900">Decisions: </span>
+                        <span className="text-gray-700">{meta.ownsDecisions}</span>
                       </div>
                       <div>
-                        <div className="font-medium text-gray-900">Who owns decisions</div>
-                        <div className="text-gray-700">{meta.ownsDecisions}</div>
+                        <span className="font-semibold text-gray-900">Executes: </span>
+                        <span className="text-gray-700">{meta.executesCare}</span>
                       </div>
                       <div>
-                        <div className="font-medium text-gray-900">Who executes care</div>
-                        <div className="text-gray-700">{meta.executesCare}</div>
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900">Who supervises</div>
-                        <div className="text-gray-700">{meta.supervises}</div>
+                        <span className="font-semibold text-gray-900">Supervises: </span>
+                        <span className="text-gray-700">{meta.supervises}</span>
                       </div>
                     </div>
 
-                    <div className="mb-5">
-                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Primary Value</div>
-                      <div className="text-sm text-gray-900">{meta.primaryValue}</div>
-                    </div>
-
-                    <div className="pt-4 border-t border-gray-200">
-                      <div className="text-sm font-medium text-blue-600">
-                        Select this scenario
+                    <div className="pt-3 border-t border-gray-200">
+                      <div className="text-xs font-medium text-blue-600">
+                        Select →
                       </div>
                     </div>
                   </button>

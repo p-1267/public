@@ -31,6 +31,8 @@ import { SupervisorHomeWithDepartments as SupervisorHome } from './SupervisorHom
 import { AgencyAdminHome } from './AgencyAdminHome'
 import { ScenarioWiringInspector } from './ScenarioWiringInspector'
 import { SessionGuard } from './SessionGuard'
+import { ScenarioIdentityBanner } from './ScenarioIdentityBanner'
+import { ScenarioStoryPanel } from './ScenarioStoryPanel'
 import type { EmergencyState } from '../types/care'
 import type { ShowcaseRole } from '../config/showcase'
 
@@ -147,7 +149,7 @@ export function HostShell() {
     }
   }
 
-  if (SHOWCASE_MODE && showcaseContext?.currentRole) {
+  if (SHOWCASE_MODE && showcaseContext?.currentRole && showcaseContext.selectedResidentId) {
     console.log('[HostShell] SHOWCASE_MODE=true, currentRole:', showcaseContext.currentRole);
     const PersonaHome = {
       'SENIOR': SeniorHome,
@@ -162,7 +164,29 @@ export function HostShell() {
 
     if (PersonaHome) {
       console.log('[HostShell] Returning PersonaHome for role:', showcaseContext.currentRole);
-      return <PersonaHome />
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-blue-50">
+          <ScenarioIdentityBanner residentId={showcaseContext.selectedResidentId} />
+
+          <div className="p-6">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
+              <div className="lg:col-span-1">
+                <ScenarioStoryPanel
+                  scenarioId={showcaseContext.currentScenario?.id || 'self-managed'}
+                  currentRole={showcaseContext.currentRole}
+                />
+              </div>
+
+              <div className="lg:col-span-3">
+                <PersonaHome />
+              </div>
+            </div>
+          </div>
+
+          {SHOWCASE_MODE && <ScenarioWiringInspector />}
+        </div>
+      )
     }
   } else {
     console.log('[HostShell] Not showing PersonaHome - SHOWCASE_MODE:', SHOWCASE_MODE, 'currentRole:', showcaseContext?.currentRole);

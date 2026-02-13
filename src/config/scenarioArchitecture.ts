@@ -1,28 +1,42 @@
-export type ScenarioId = 'agency-managed-care' | 'home-care-hybrid' | 'independent-senior-family';
+export type ScenarioId = 'self-managed' | 'family-managed' | 'direct-hire' | 'agency-home-care' | 'agency-facility';
 
 export type CapabilityLevel = 'INCLUDED' | 'LIMITED' | 'EXCLUDED';
 
 export const SCENARIO_META = {
-  'agency-managed-care': {
-    description: 'Professional agency manages all aspects of care with full compliance enforcement.',
-    ownsDecisions: 'Agency',
-    executesCare: 'Caregiver',
-    supervises: 'Supervisor',
-    primaryValue: 'Compliance & Safety'
-  },
-  'home-care-hybrid': {
-    description: 'Family hires and directs a caregiver with optional agency support.',
-    ownsDecisions: 'Family',
-    executesCare: 'Caregiver',
-    supervises: 'Family',
-    primaryValue: 'Cost & Control'
-  },
-  'independent-senior-family': {
+  'self-managed': {
     description: 'Senior manages their own daily care with family monitoring and support.',
     ownsDecisions: 'Senior and Family',
     executesCare: 'Senior',
     supervises: 'Family',
-    primaryValue: 'Independence'
+    primaryValue: 'Independence & Autonomy'
+  },
+  'family-managed': {
+    description: 'Family oversees and manages all aspects of senior care with active participation.',
+    ownsDecisions: 'Family',
+    executesCare: 'Senior (with family guidance)',
+    supervises: 'Family',
+    primaryValue: 'Family Control & Oversight'
+  },
+  'direct-hire': {
+    description: 'Family hires and directs a caregiver directly with optional agency support.',
+    ownsDecisions: 'Family',
+    executesCare: 'Caregiver',
+    supervises: 'Family',
+    primaryValue: 'Cost Control & Flexibility'
+  },
+  'agency-home-care': {
+    description: 'Professional agency provides in-home care with supervisor oversight.',
+    ownsDecisions: 'Agency',
+    executesCare: 'Caregiver',
+    supervises: 'Supervisor',
+    primaryValue: 'Professional Home Care'
+  },
+  'agency-facility': {
+    description: 'Full agency facility care with departments, compliance, and workforce management.',
+    ownsDecisions: 'Agency',
+    executesCare: 'Caregiver',
+    supervises: 'Supervisor',
+    primaryValue: 'Compliance & Safety'
   }
 };
 
