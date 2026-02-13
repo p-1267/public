@@ -37,8 +37,10 @@ import { SHOWCASE_MODE } from './config/showcase'
 import { useState, useEffect } from 'react'
 
 function App() {
+  console.log('[APP_INIT] App component rendering...');
   const { isAuthenticated, currentRole, currentScenario, currentStep } = useShowcase()
   const [currentRoute, setCurrentRoute] = useState('')
+  console.log('[APP_STATE] currentStep:', currentStep, 'currentRole:', currentRole, 'currentRoute:', currentRoute);
 
 
   useEffect(() => {

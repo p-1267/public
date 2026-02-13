@@ -5,12 +5,14 @@ import { SCENARIO_META } from '../config/scenarioArchitecture';
 import { supabase } from '../lib/supabase';
 
 export function ShowcaseScenarioSelector() {
+  console.log('[SCENARIO_SELECTOR_INIT] Component rendering...');
   const { currentScenario, setScenario, advanceToNextStep, currentStep, currentRole, selectedResidentId } = useShowcase();
   const [isSeeding, setIsSeeding] = useState(false);
   const [seedError, setSeedError] = useState<string | null>(null);
   const [currentRoute, setCurrentRoute] = useState('');
   const [seedingStartTime, setSeedingStartTime] = useState<number | null>(null);
   const requestIdRef = React.useRef(0);
+  console.log('[SCENARIO_SELECTOR_STATE] isSeeding:', isSeeding, 'seedError:', seedError);
 
   useEffect(() => {
     const checkHash = () => {
