@@ -21,6 +21,7 @@ import { SeniorOperatingModeSwitcher } from './SeniorOperatingModeSwitcher';
 import { CareContextProvider } from '../contexts/CareContextProvider';
 import { ResidentContextCard } from './ResidentContextCard';
 import { supabase } from '../lib/supabase';
+import { CognitiveSnapshot } from './cognitive/CognitiveSnapshot';
 
 const SeniorHomeContent: React.FC = () => {
   const { selectedResidentId, currentRole, currentScenario } = useShowcase();
@@ -224,6 +225,12 @@ const SeniorHomeContent: React.FC = () => {
             : `You have ${todayAppointments.length} appointment${todayAppointments.length > 1 ? 's' : ''} scheduled for today.`}
         </p>
       </div>
+
+      {selectedResidentId && (
+        <div style={{ marginBottom: '32px' }}>
+          <CognitiveSnapshot residentId={selectedResidentId} role="SENIOR" />
+        </div>
+      )}
 
       {todayAppointments.length > 0 && (
         <div style={{ marginBottom: '32px' }}>

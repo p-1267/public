@@ -17,6 +17,7 @@ import { FamilyAIAssistant } from './FamilyAIAssistant';
 import { CareContextProvider } from '../contexts/CareContextProvider';
 import { ResidentContextCard } from './ResidentContextCard';
 import { isRoleActiveInScenario } from '../config/roleVisibilityMatrix';
+import { CognitiveSnapshot } from './cognitive/CognitiveSnapshot';
 
 const FamilyHomeContent: React.FC = () => {
   const { selectedResidentId, currentRole, currentScenario } = useShowcase();
@@ -182,6 +183,12 @@ const FamilyHomeContent: React.FC = () => {
         <CareContextProvider residentId={selectedResidentId}>
           <ResidentContextCard />
         </CareContextProvider>
+      )}
+
+      {selectedResidentId && (
+        <div style={{ marginBottom: '32px' }}>
+          <CognitiveSnapshot residentId={selectedResidentId} role="FAMILY" />
+        </div>
       )}
 
       <div style={{
