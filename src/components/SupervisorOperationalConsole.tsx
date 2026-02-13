@@ -254,8 +254,27 @@ export const SupervisorOperationalConsole: React.FC = () => {
       ) : escalations.length === 0 ? (
         <div className="text-center py-12">
           <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-3" />
-          <div className="text-lg font-medium text-slate-900">All Clear</div>
-          <div className="text-sm text-slate-600 mt-1">No escalations requiring attention</div>
+          <div className="text-lg font-medium text-slate-900">No Active Escalations</div>
+          <div className="text-sm text-slate-600 mt-2 max-w-md mx-auto">
+            {mockAgencyId ? (
+              <>
+                <div className="mb-3">Querying escalations for agency: <span className="font-mono text-xs">{mockAgencyId.slice(0,8)}...</span></div>
+                <div className="text-xs bg-slate-100 p-3 rounded font-mono text-left">
+                  SELECT * FROM escalation_queue<br/>
+                  WHERE agency_id = '{mockAgencyId}'<br/>
+                  AND status IN ('PENDING', 'IN_PROGRESS')
+                </div>
+                <button
+                  onClick={loadData}
+                  className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700"
+                >
+                  Refresh Data
+                </button>
+              </>
+            ) : (
+              'Showcase context not initialized'
+            )}
+          </div>
         </div>
       ) : (
         <div className="border border-slate-200 rounded-lg overflow-hidden">
