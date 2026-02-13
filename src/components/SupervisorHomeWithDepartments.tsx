@@ -23,6 +23,8 @@ import { KitchenWorkboard } from './KitchenWorkboard';
 import { OperatingMode } from '../types/operationalModel';
 import { DailyWorkPlanner } from './DailyWorkPlanner';
 import { DepartmentalWorkboard } from './DepartmentalWorkboard';
+import { SupervisorOperationalConsole } from './SupervisorOperationalConsole';
+import { AIIntelligenceDashboard } from './AIIntelligenceDashboard';
 
 export const SupervisorHomeWithDepartments: React.FC = () => {
   console.log('[SupervisorHomeWithDepartments] Component mounting...');
@@ -59,86 +61,83 @@ export const SupervisorHomeWithDepartments: React.FC = () => {
       {(activeTab) => {
         try {
           if (activeTab === 'home') {
+            console.log('[SupervisorHomeWithDepartments] Rendering home tab - NEW OPERATIONAL CONSOLE');
+            return <SupervisorOperationalConsole />;
+          }
+
+          if (activeTab === 'ai-intelligence') {
+            console.log('[SupervisorHomeWithDepartments] Rendering AI Intelligence tab');
             return (
               <div className="space-y-6">
-                <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-lg p-4 border-4 border-yellow-500">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-2xl font-bold">SHOWCASE MODE: OPERATIONAL BRAIN</div>
-                    <div className="text-sm opacity-90">Department-based care coordination with full accountability</div>
+                <div className="bg-white rounded-lg border border-slate-200 p-4">
+                  <div className="text-sm text-slate-600 mb-4">
+                    Predictive intelligence with risk forecasting and pattern recognition
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-sm font-bold">OPERATING MODE:</div>
-                    <select
-                      value={operatingMode || 'AGENCY'}
-                      onChange={(e) => setOperatingMode && setOperatingMode(e.target.value as OperatingMode)}
-                      className="bg-white text-gray-900 px-4 py-2 rounded-lg font-bold border-2 border-yellow-500"
-                    >
-                      <option value="AGENCY">AGENCY (40 residents, dedicated departments)</option>
-                      <option value="HYBRID">HYBRID (15 residents, some shared roles)</option>
-                      <option value="FAMILY_HOME">FAMILY HOME (4 residents, multi-role staff)</option>
-                    </select>
-                  </div>
+                  <Level4ActivePanel showToggle={true} />
                 </div>
               </div>
+            );
+          }
 
-              <Level4ActivePanel showToggle={true} />
-
-              <div className="bg-white rounded-lg border-4 border-gray-400 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="text-2xl font-bold text-gray-900">DEPARTMENT OPERATIONS</div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setDepartmentTab('overview')}
-                      className={`px-4 py-2 rounded-lg font-bold ${
-                        departmentTab === 'overview'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      OVERVIEW
-                    </button>
-                    <button
-                      onClick={() => setDepartmentTab('nursing')}
-                      className={`px-4 py-2 rounded-lg font-bold ${
-                        departmentTab === 'nursing'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      🏥 NURSING
-                    </button>
-                    <button
-                      onClick={() => setDepartmentTab('housekeeping')}
-                      className={`px-4 py-2 rounded-lg font-bold ${
-                        departmentTab === 'housekeeping'
-                          ? 'bg-teal-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      🧹 HOUSEKEEPING
-                    </button>
-                    <button
-                      onClick={() => setDepartmentTab('kitchen')}
-                      className={`px-4 py-2 rounded-lg font-bold ${
-                        departmentTab === 'kitchen'
-                          ? 'bg-orange-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      🍽️ KITCHEN
-                    </button>
+          if (activeTab === 'departments') {
+            console.log('[SupervisorHomeWithDepartments] Rendering departments tab');
+            return (
+              <div className="space-y-6">
+                <div className="bg-white rounded-lg border border-slate-200 p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="text-2xl font-bold text-slate-900">Department Operations</div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setDepartmentTab('overview')}
+                        className={`px-4 py-2 rounded-lg font-medium text-sm ${
+                          departmentTab === 'overview'
+                            ? 'bg-slate-900 text-white'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        Overview
+                      </button>
+                      <button
+                        onClick={() => setDepartmentTab('nursing')}
+                        className={`px-4 py-2 rounded-lg font-medium text-sm ${
+                          departmentTab === 'nursing'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        Nursing
+                      </button>
+                      <button
+                        onClick={() => setDepartmentTab('housekeeping')}
+                        className={`px-4 py-2 rounded-lg font-medium text-sm ${
+                          departmentTab === 'housekeeping'
+                            ? 'bg-teal-600 text-white'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        Housekeeping
+                      </button>
+                      <button
+                        onClick={() => setDepartmentTab('kitchen')}
+                        className={`px-4 py-2 rounded-lg font-medium text-sm ${
+                          departmentTab === 'kitchen'
+                            ? 'bg-orange-600 text-white'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        Kitchen
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                {departmentTab === 'overview' && <ShowcaseDecisionSpineView />}
-                {departmentTab === 'nursing' && <NursingWorkboard operatingMode={operatingMode || 'AGENCY'} />}
-                {departmentTab === 'housekeeping' && <HousekeepingWorkboard operatingMode={operatingMode || 'AGENCY'} />}
-                {departmentTab === 'kitchen' && <KitchenWorkboard operatingMode={operatingMode || 'AGENCY'} />}
+                  {departmentTab === 'overview' && <ShowcaseDecisionSpineView />}
+                  {departmentTab === 'nursing' && <NursingWorkboard operatingMode={operatingMode || 'AGENCY'} />}
+                  {departmentTab === 'housekeeping' && <HousekeepingWorkboard operatingMode={operatingMode || 'AGENCY'} />}
+                  {departmentTab === 'kitchen' && <KitchenWorkboard operatingMode={operatingMode || 'AGENCY'} />}
+                </div>
               </div>
-            </div>
-          );
-        }
+            );
+          }
 
         switch (activeTab) {
           case 'scheduling':
