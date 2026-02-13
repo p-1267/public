@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useShowcase } from '../contexts/ShowcaseContext';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface DepartmentStats {
   department: string;
@@ -27,13 +28,14 @@ const DEPARTMENT_COLORS: Record<string, string> = {
   HYGIENE: 'bg-cyan-100 border-cyan-300 text-cyan-900',
   MOBILITY: 'bg-green-100 border-green-300 text-green-900',
   NUTRITION: 'bg-lime-100 border-lime-300 text-lime-900',
-  MONITORING: 'bg-purple-100 border-purple-300 text-purple-900'
+  MONITORING: 'bg-slate-100 border-slate-300 text-slate-900'
 };
 
 export const ShowcaseDepartmentView: React.FC = () => {
-  const { mockAgencyId } = useShowcase();
+  const { mockAgencyId, currentScenario } = useShowcase();
   const [departmentStats, setDepartmentStats] = useState<DepartmentStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     if (mockAgencyId) {
@@ -78,16 +80,66 @@ export const ShowcaseDepartmentView: React.FC = () => {
     );
   }
 
-  return (
-    <div className="p-6 space-y-6">
-      <header className="mb-8">
-        <h1 className="text-4xl font-bold text-slate-900 mb-2">Department Overview</h1>
-        <p className="text-lg text-slate-600">
-          Task status across all departments
-        </p>
-      </header>
+  const scenarioName = currentScenario?.name || 'Scenario Active';
+  const totalTasks = departmentStats.reduce((sum, d) => sum + d.total_tasks, 0);
+  const completedTasks = departmentStats.reduce((sum, d) => sum + d.completed_tasks, 0);
+  const needsReview = departmentStats.reduce((sum, d) => sum + d.pending_acknowledgement, 0);
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+  return (
+    <div className="bg-white border border-slate-200 rounded-lg">
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl font-bold text-slate-900">Department Overview</h2>
+            <div className="px-3 py-1 bg-slate-100 border border-slate-300 rounded text-xs font-semibold text-slate-700">
+              {scenarioName}
+            </div>
+          </div>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded font-semibold text-sm transition-colors"
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp className="w-4 h-4" />
+                Collapse
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-4 h-4" />
+                Expand Details
+              </>
+            )}
+          </button>
+        </div>
+
+        {!isExpanded && (
+          <div className="flex gap-6 text-sm">
+            <div>
+              <span className="text-slate-600">Total Tasks: </span>
+              <span className="font-bold text-slate-900">{totalTasks}</span>
+            </div>
+            <div>
+              <span className="text-slate-600">Completed: </span>
+              <span className="font-bold text-green-700">{completedTasks}</span>
+            </div>
+            {needsReview > 0 && (
+              <div>
+                <span className="text-slate-600">Needs Review: </span>
+                <span className="font-bold text-red-700">{needsReview}</span>
+              </div>
+            )}
+            <div>
+              <span className="text-slate-600">Departments: </span>
+              <span className="font-bold text-slate-900">{departmentStats.length}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {isExpanded && (
+        <div className="px-6 pb-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {departmentStats.map((dept) => (
           <div
             key={dept.department}
@@ -136,19 +188,21 @@ export const ShowcaseDepartmentView: React.FC = () => {
         ))}
       </div>
 
-      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mt-8">
-        <div className="flex items-start gap-4">
-          <div className="text-3xl">ℹ️</div>
-          <div>
-            <h3 className="font-bold text-blue-900 text-lg mb-2">Department Structure</h3>
-            <p className="text-blue-800 text-sm leading-relaxed">
-              Each department manages specific types of care tasks. NURSING handles medications and vitals,
-              HOUSEKEEPING manages room cleaning and hygiene, and KITCHEN coordinates meal preparation and delivery.
-              Staff are assigned to departments based on their roles and certifications.
-            </p>
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="text-2xl">ℹ️</div>
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm mb-1">Department Structure</h3>
+                <p className="text-slate-700 text-xs leading-relaxed">
+                  Each department manages specific types of care tasks. NURSING handles medications and vitals,
+                  HOUSEKEEPING manages room cleaning and hygiene, and KITCHEN coordinates meal preparation and delivery.
+                  Staff are assigned to departments based on their roles and certifications.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

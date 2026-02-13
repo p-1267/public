@@ -23,6 +23,7 @@ import { DepartmentsPage } from './DepartmentsPage';
 import { AIIntelligenceDashboard } from './AIIntelligenceDashboard';
 import { SupervisorResidentsPage } from './showcase/SupervisorResidentsPage';
 import { SupervisorAutomationPage } from './showcase/SupervisorAutomationPage';
+import { SupervisorTriageStrip } from './SupervisorTriageStrip';
 import { useShowcase } from '../contexts/ShowcaseContext';
 import { isRoleActiveInScenario } from '../config/roleVisibilityMatrix';
 
