@@ -66,7 +66,8 @@ export const SupervisorHome: React.FC = () => {
         switch (activeTab) {
           case 'home':
             return (
-              <div className="space-y-6">
+              <div className="space-y-6 p-6">
+                <SupervisorTriageStrip />
                 <ShowcaseDepartmentView />
               </div>
             );
