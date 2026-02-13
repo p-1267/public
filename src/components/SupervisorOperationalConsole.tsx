@@ -58,6 +58,7 @@ interface IntelligenceSignal {
 type TabType = 'triage' | 'escalations' | 'intelligence' | 'workforce' | 'compliance';
 
 export const SupervisorOperationalConsole: React.FC = () => {
+  console.log('[SHOWCASE_PROOF] SupervisorOperationalConsole MOUNTED');
   const { mockAgencyId } = useShowcase();
   const [activeTab, setActiveTab] = useState<TabType>('triage');
   const [escalations, setEscalations] = useState<EscalationItem[]>([]);
@@ -67,6 +68,7 @@ export const SupervisorOperationalConsole: React.FC = () => {
   const [expandedEscalation, setExpandedEscalation] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('[SupervisorOperationalConsole] useEffect - mockAgencyId:', mockAgencyId);
     if (mockAgencyId) {
       loadData();
     }

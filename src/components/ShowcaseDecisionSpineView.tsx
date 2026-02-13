@@ -14,25 +14,25 @@ export function ShowcaseDecisionSpineView() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="bg-black text-white rounded-lg p-6 border-4 border-yellow-500">
-        <div className="text-3xl font-bold mb-2">🧠 COGNITIVE AUTHORITY: ACTIVE</div>
-        <div className="text-xl mb-4">System is judging all operational contexts in real-time</div>
+      <div className="bg-slate-900 text-white rounded-lg p-6 border-l-4 border-slate-700">
+        <div className="text-xl font-bold mb-2">Cognitive Authority: Active</div>
+        <div className="text-sm text-slate-300 mb-4">System is judging all operational contexts in real-time</div>
         <div className="grid grid-cols-4 gap-4">
-          <div className="bg-red-900 rounded-lg p-4 text-center">
-            <div className="text-4xl font-bold">{critical.length}</div>
-            <div className="text-sm">CRITICAL</div>
+          <div className="bg-slate-800 rounded-lg p-4 text-center border-l-2 border-red-500">
+            <div className="text-3xl font-bold text-red-400">{critical.length}</div>
+            <div className="text-xs text-slate-400 uppercase tracking-wider">Critical</div>
           </div>
-          <div className="bg-red-600 rounded-lg p-4 text-center">
-            <div className="text-4xl font-bold">{unsafe.length}</div>
-            <div className="text-sm">UNSAFE</div>
+          <div className="bg-slate-800 rounded-lg p-4 text-center border-l-2 border-orange-500">
+            <div className="text-3xl font-bold text-orange-400">{unsafe.length}</div>
+            <div className="text-xs text-slate-400 uppercase tracking-wider">Unsafe</div>
           </div>
-          <div className="bg-yellow-600 rounded-lg p-4 text-center">
-            <div className="text-4xl font-bold">{concerning.length}</div>
-            <div className="text-sm">CONCERNING</div>
+          <div className="bg-slate-800 rounded-lg p-4 text-center border-l-2 border-amber-500">
+            <div className="text-3xl font-bold text-amber-400">{concerning.length}</div>
+            <div className="text-xs text-slate-400 uppercase tracking-wider">Concerning</div>
           </div>
-          <div className="bg-green-600 rounded-lg p-4 text-center">
-            <div className="text-4xl font-bold">{acceptable.length}</div>
-            <div className="text-sm">ACCEPTABLE</div>
+          <div className="bg-slate-800 rounded-lg p-4 text-center border-l-2 border-green-500">
+            <div className="text-3xl font-bold text-green-400">{acceptable.length}</div>
+            <div className="text-xs text-slate-400 uppercase tracking-wider">Acceptable</div>
           </div>
         </div>
       </div>

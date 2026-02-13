@@ -32,6 +32,7 @@ import { ShowcaseSeniorFamilyScenario } from './components/ShowcaseSeniorFamilyS
 import { ShowcaseDeviceIntegrationPage } from './components/ShowcaseDeviceIntegrationPage'
 import { AIIntelligenceDashboard } from './components/AIIntelligenceDashboard'
 import { ShowcaseWatchdog } from './components/ShowcaseWatchdog'
+import { BuildSignature } from './components/BuildSignature'
 import { useShowcase } from './contexts/ShowcaseContext'
 import { SHOWCASE_MODE } from './config/showcase'
 import { useState, useEffect } from 'react'
@@ -267,6 +268,7 @@ function App() {
     const remountKey = `${currentRole || 'none'}`
     return (
       <>
+        <BuildSignature />
         <ShowcaseNavPanel />
         <ShowcaseHomeButton />
         <HostShell key={remountKey} />

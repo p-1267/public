@@ -61,12 +61,12 @@ export const SupervisorHomeWithDepartments: React.FC = () => {
       {(activeTab) => {
         try {
           if (activeTab === 'home') {
-            console.log('[SupervisorHomeWithDepartments] Rendering home tab - NEW OPERATIONAL CONSOLE');
+            console.log('[SUP_TAB] dashboard mounted - SupervisorOperationalConsole');
             return <SupervisorOperationalConsole />;
           }
 
           if (activeTab === 'ai-intelligence') {
-            console.log('[SupervisorHomeWithDepartments] Rendering AI Intelligence tab');
+            console.log('[SUP_TAB] ai-intelligence mounted - Level4ActivePanel');
             return (
               <div className="space-y-6">
                 <div className="bg-white rounded-lg border border-slate-200 p-4">
@@ -80,7 +80,7 @@ export const SupervisorHomeWithDepartments: React.FC = () => {
           }
 
           if (activeTab === 'departments') {
-            console.log('[SupervisorHomeWithDepartments] Rendering departments tab');
+            console.log('[SUP_TAB] departments mounted - ShowcaseDecisionSpineView');
             return (
               <div className="space-y-6">
                 <div className="bg-white rounded-lg border border-slate-200 p-6">

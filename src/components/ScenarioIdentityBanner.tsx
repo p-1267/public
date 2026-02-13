@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useShowcase } from '../contexts/ShowcaseContext';
+import { SHOWCASE_MODE } from '../config/showcase';
 import { Info } from 'lucide-react';
 
 interface CareContext {
@@ -15,12 +17,22 @@ interface ScenarioIdentityBannerProps {
 }
 
 export function ScenarioIdentityBanner({ residentId }: ScenarioIdentityBannerProps) {
+  const { currentScenario } = useShowcase();
   const [context, setContext] = useState<CareContext | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('[ScenarioIdentityBanner] Init - residentId:', residentId, 'SHOWCASE_MODE:', SHOWCASE_MODE, 'currentScenario:', currentScenario);
+
+    // In showcase mode, use ShowcaseContext directly instead of DB lookup
+    if (SHOWCASE_MODE && currentScenario) {
+      console.log('[ScenarioIdentityBanner] Using showcase context - scenario:', currentScenario.id, currentScenario.name);
+      setLoading(false);
+      return;
+    }
+
     fetchCareContext();
-  }, [residentId]);
+  }, [residentId, currentScenario]);
 
   const fetchCareContext = async () => {
     try {
@@ -35,7 +47,10 @@ export function ScenarioIdentityBanner({ residentId }: ScenarioIdentityBannerPro
       }
 
       if (data) {
+        console.log('[ScenarioIdentityBanner] Fetched context from DB:', data);
         setContext(data);
+      } else {
+        console.warn('[ScenarioIdentityBanner] No context returned from DB');
       }
       setLoading(false);
     } catch (err) {
@@ -43,6 +58,38 @@ export function ScenarioIdentityBanner({ residentId }: ScenarioIdentityBannerPro
       setLoading(false);
     }
   };
+
+  // In showcase mode, use currentScenario
+  if (SHOWCASE_MODE && currentScenario) {
+    return (
+      <div className="bg-blue-50 border-b border-blue-200 px-6 py-3">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Info className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-bold text-blue-900">
+                Active Scenario:
+              </span>
+            </div>
+            <span className="text-sm font-bold text-blue-700">
+              {currentScenario.name}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-6 text-xs text-blue-800">
+            <div>
+              <span className="font-semibold">ID: </span>
+              {currentScenario.id}
+            </div>
+            <div>
+              <span className="font-semibold">Mode: </span>
+              SHOWCASE
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading || !context) {
     return null;
