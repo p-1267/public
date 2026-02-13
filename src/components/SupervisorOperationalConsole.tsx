@@ -55,7 +55,21 @@ interface IntelligenceSignal {
   suggested_actions: string[];
 }
 
-type TabType = 'triage' | 'escalations' | 'intelligence' | 'workforce' | 'compliance';
+interface ClinicalReview {
+  id: string;
+  escalation_id: string;
+  resident_id: string;
+  resident_name: string;
+  notification_reason: string;
+  clinical_summary: string;
+  urgency: string;
+  required_by: string;
+  notification_status: string;
+  hours_until_due: number;
+  overdue: boolean;
+}
+
+type TabType = 'triage' | 'escalations' | 'md-review' | 'intelligence' | 'workforce' | 'compliance';
 
 export const SupervisorOperationalConsole: React.FC = () => {
   console.log('[SHOWCASE_PROOF] SupervisorOperationalConsole MOUNTED');
@@ -64,6 +78,7 @@ export const SupervisorOperationalConsole: React.FC = () => {
   const [escalations, setEscalations] = useState<EscalationItem[]>([]);
   const [metrics, setMetrics] = useState<SLAMetrics | null>(null);
   const [signals, setSignals] = useState<IntelligenceSignal[]>([]);
+  const [clinicalReviews, setClinicalReviews] = useState<ClinicalReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedEscalation, setExpandedEscalation] = useState<string | null>(null);
 
@@ -77,8 +92,10 @@ export const SupervisorOperationalConsole: React.FC = () => {
   const loadData = async () => {
     if (!mockAgencyId) return;
 
+    console.log('[SupervisorOperationalConsole] loadData - fetching escalations, metrics, signals, clinical reviews for agency:', mockAgencyId);
+
     try {
-      const [escalationsRes, metricsRes, signalsRes] = await Promise.all([
+      const [escalationsRes, metricsRes, signalsRes, reviewsRes] = await Promise.all([
         supabase.rpc('get_supervisor_escalation_dashboard', { p_agency_id: mockAgencyId }),
         supabase.rpc('get_sla_metrics', { p_agency_id: mockAgencyId }),
         supabase
@@ -87,8 +104,17 @@ export const SupervisorOperationalConsole: React.FC = () => {
           .eq('agency_id', mockAgencyId)
           .eq('requires_human_action', true)
           .order('detected_at', { ascending: false })
-          .limit(20)
+          .limit(20),
+        supabase
+          .from('clinician_reviews')
+          .select('*, escalation_queue!inner(agency_id)')
+          .eq('escalation_queue.agency_id', mockAgencyId)
+          .in('notification_status', ['NOT_SENT', 'SENT', 'DELIVERED'])
+          .order('required_by', { ascending: true })
       ]);
+
+      console.log('[SupervisorOperationalConsole] Escalations result:', escalationsRes.data?.length || 0, 'rows');
+      console.log('[SupervisorOperationalConsole] Clinical reviews result:', reviewsRes.data?.length || 0, 'rows');
 
       if (escalationsRes.data) {
         setEscalations(escalationsRes.data);
@@ -100,6 +126,18 @@ export const SupervisorOperationalConsole: React.FC = () => {
 
       if (signalsRes.data) {
         setSignals(signalsRes.data);
+      }
+
+      if (reviewsRes.data) {
+        const reviewsWithCalc = reviewsRes.data.map(review => {
+          const hoursUntilDue = (new Date(review.required_by).getTime() - Date.now()) / (1000 * 60 * 60);
+          return {
+            ...review,
+            hours_until_due: hoursUntilDue,
+            overdue: hoursUntilDue < 0
+          };
+        });
+        setClinicalReviews(reviewsWithCalc as ClinicalReview[]);
       }
     } catch (error) {
       console.error('Failed to load supervisor data:', error);
@@ -256,25 +294,43 @@ export const SupervisorOperationalConsole: React.FC = () => {
       ) : escalations.length === 0 ? (
         <div className="text-center py-12">
           <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-3" />
-          <div className="text-lg font-medium text-slate-900">No Active Escalations</div>
-          <div className="text-sm text-slate-600 mt-2 max-w-md mx-auto">
+          <div className="text-lg font-medium text-slate-900">All Clear - No Active Escalations</div>
+          <div className="text-sm text-slate-600 mt-2 max-w-2xl mx-auto">
             {mockAgencyId ? (
               <>
-                <div className="mb-3">Querying escalations for agency: <span className="font-mono text-xs">{mockAgencyId.slice(0,8)}...</span></div>
-                <div className="text-xs bg-slate-100 p-3 rounded font-mono text-left">
-                  SELECT * FROM escalation_queue<br/>
-                  WHERE agency_id = '{mockAgencyId}'<br/>
-                  AND status IN ('PENDING', 'IN_PROGRESS')
+                <div className="mb-3">
+                  <div className="font-semibold text-slate-800 mb-2">Why is this empty?</div>
+                  <div className="text-left space-y-1">
+                    <div>• No escalations created in last 7 days for agency <span className="font-mono text-xs">{mockAgencyId.slice(0,8)}...</span></div>
+                    <div>• All recent escalations have been resolved</div>
+                    <div>• Exception detection triggers have not fired</div>
+                    <div>• Intelligence signals have not generated escalations requiring supervisor action</div>
+                  </div>
                 </div>
-                <button
-                  onClick={loadData}
-                  className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700"
-                >
-                  Refresh Data
-                </button>
+                <div className="text-xs bg-slate-100 p-3 rounded font-mono text-left mb-3">
+                  <div className="font-semibold mb-1">Data Source:</div>
+                  RPC: get_supervisor_escalation_dashboard('{mockAgencyId.slice(0,8)}...')<br/>
+                  → Queries: escalation_queue<br/>
+                  → Filters: status IN ('PENDING', 'ACKNOWLEDGED', 'IN_PROGRESS', 'NOTIFIED')<br/>
+                  → Result: {escalations.length} rows
+                </div>
+                <div className="flex gap-2 justify-center">
+                  <button
+                    onClick={loadData}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700"
+                  >
+                    Refresh Data
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('intelligence')}
+                    className="px-4 py-2 bg-slate-600 text-white text-sm font-medium rounded hover:bg-slate-700"
+                  >
+                    View Intelligence Signals
+                  </button>
+                </div>
               </>
             ) : (
-              'Showcase context not initialized'
+              <div className="text-red-600 font-semibold">Error: Showcase context not initialized (mockAgencyId missing)</div>
             )}
           </div>
         </div>
@@ -400,6 +456,158 @@ export const SupervisorOperationalConsole: React.FC = () => {
     </div>
   );
 
+  // MD Review View - Clinical Escalations Requiring Physician Notification
+  const MDReviewView = () => (
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold text-slate-900">Clinical Escalations (MD Review Required)</h2>
+        <button
+          onClick={loadData}
+          className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-50"
+        >
+          Refresh
+        </button>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Stethoscope className="w-5 h-5 text-blue-600" />
+          <h3 className="font-semibold text-blue-900">Physician Notification Pipeline</h3>
+        </div>
+        <p className="text-sm text-blue-800">
+          This lane tracks escalations that have been flagged for physician review. Each item shows the notification status,
+          clinical urgency, and time remaining until physician response is required per protocol.
+        </p>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-12 text-slate-500">Loading clinical reviews...</div>
+      ) : clinicalReviews.length === 0 ? (
+        <div className="text-center py-12">
+          <Stethoscope className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+          <div className="text-lg font-medium text-slate-900">No Pending Physician Notifications</div>
+          <div className="text-sm text-slate-600 mt-2 max-w-md mx-auto">
+            All clinical escalations requiring physician review have been notified or are in progress.
+            <div className="mt-3 text-xs bg-slate-100 p-3 rounded font-mono text-left">
+              Query: SELECT * FROM clinician_reviews<br/>
+              WHERE notification_status IN ('NOT_SENT', 'SENT', 'DELIVERED')<br/>
+              Result: {clinicalReviews.length} rows
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="border border-slate-200 rounded-lg overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase">Urgency</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase">Resident</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase">Reason</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase">Clinical Summary</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase">Due In</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {clinicalReviews.map((review) => (
+                <tr key={review.id} className="hover:bg-slate-50">
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex px-2 py-1 text-xs font-bold rounded ${
+                      review.urgency === 'IMMEDIATE' ? 'bg-red-600 text-white' :
+                      review.urgency === 'URGENT' ? 'bg-orange-600 text-white' :
+                      'bg-amber-600 text-white'
+                    }`}>
+                      {review.urgency}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-slate-900">{review.resident_name}</div>
+                    <div className="text-xs text-slate-500">ID: {review.resident_id.slice(0, 8)}...</div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-sm text-slate-900">{review.notification_reason}</div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-sm text-slate-700 max-w-xs">
+                      {review.clinical_summary?.slice(0, 100)}
+                      {review.clinical_summary?.length > 100 && '...'}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded ${
+                      review.notification_status === 'NOT_SENT' ? 'bg-yellow-100 text-yellow-800' :
+                      review.notification_status === 'SENT' ? 'bg-blue-100 text-blue-800' :
+                      review.notification_status === 'DELIVERED' ? 'bg-purple-100 text-purple-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {review.notification_status.replace(/_/g, ' ')}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className={`text-sm font-medium ${review.overdue ? 'text-red-600' : review.hours_until_due < 1 ? 'text-orange-600' : 'text-slate-900'}`}>
+                      {review.overdue
+                        ? `${Math.abs(Math.round(review.hours_until_due))}h OVERDUE`
+                        : review.hours_until_due < 1
+                        ? `${Math.round(review.hours_until_due * 60)}m`
+                        : `${Math.round(review.hours_until_due)}h`
+                      }
+                    </div>
+                    {review.overdue && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <AlertTriangle className="w-3 h-3 text-red-600" />
+                        <span className="text-xs text-red-600 font-semibold">OVERDUE</span>
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {review.notification_status === 'NOT_SENT' && (
+                        <button
+                          onClick={() => {
+                            // Mark as sent - in production this would trigger actual notification
+                            alert('In production, this would send notification via configured method (SMS/Email/Fax/EHR)');
+                          }}
+                          className="px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100"
+                        >
+                          Send Now
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          // View full escalation details
+                          const escalation = escalations.find(e => e.escalation_id === review.escalation_id);
+                          if (escalation) {
+                            setExpandedEscalation(review.escalation_id);
+                            setActiveTab('triage');
+                          }
+                        }}
+                        className="px-2 py-1 text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded hover:bg-slate-100"
+                      >
+                        View Details
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="mt-6 bg-slate-50 border border-slate-200 rounded-lg p-4">
+        <h3 className="font-semibold text-slate-900 mb-2">Notification Workflow</h3>
+        <ol className="text-sm text-slate-700 space-y-1 list-decimal list-inside">
+          <li>Escalation flagged for physician review (via "Notify MD" button in Triage tab)</li>
+          <li>Clinical review request created with urgency level and required response time</li>
+          <li>Notification sent via configured method (SMS, Email, Fax, or EHR integration)</li>
+          <li>Physician acknowledgment tracked with audit trail</li>
+          <li>Orders/recommendations documented and linked to resident care plan</li>
+        </ol>
+      </div>
+    </div>
+  );
+
   // Intelligence Signals View
   const IntelligenceView = () => (
     <div className="p-6">
@@ -466,6 +674,7 @@ export const SupervisorOperationalConsole: React.FC = () => {
           {[
             { id: 'triage', label: 'Exception Triage', icon: AlertTriangle },
             { id: 'escalations', label: 'Escalations & Deadlines', icon: Clock },
+            { id: 'md-review', label: 'Clinical Escalations (MD)', icon: Stethoscope },
             { id: 'intelligence', label: 'Predictive Intelligence', icon: TrendingUp },
             { id: 'workforce', label: 'Workforce Impact', icon: Users },
             { id: 'compliance', label: 'Compliance / Audit', icon: CheckCircle }
@@ -493,6 +702,7 @@ export const SupervisorOperationalConsole: React.FC = () => {
       <div className="bg-white">
         {activeTab === 'triage' && <TriageTable />}
         {activeTab === 'escalations' && <TriageTable />}
+        {activeTab === 'md-review' && <MDReviewView />}
         {activeTab === 'intelligence' && <IntelligenceView />}
         {activeTab === 'workforce' && (
           <div className="p-6">
