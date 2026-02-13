@@ -24,6 +24,7 @@ import { AIIntelligenceDashboard } from './AIIntelligenceDashboard';
 import { SupervisorResidentsPage } from './showcase/SupervisorResidentsPage';
 import { SupervisorAutomationPage } from './showcase/SupervisorAutomationPage';
 import { SupervisorTriageStrip } from './SupervisorTriageStrip';
+import { SupervisorOperationalConsole } from './SupervisorOperationalConsole';
 import { useShowcase } from '../contexts/ShowcaseContext';
 import { isRoleActiveInScenario } from '../config/roleVisibilityMatrix';
 
@@ -65,12 +66,7 @@ export const SupervisorHome: React.FC = () => {
       {(activeTab) => {
         switch (activeTab) {
           case 'home':
-            return (
-              <div className="space-y-6 p-6">
-                <SupervisorTriageStrip />
-                <ShowcaseDepartmentView />
-              </div>
-            );
+            return <SupervisorOperationalConsole />;
           case 'departments':
             return (
               <div className="p-6">
