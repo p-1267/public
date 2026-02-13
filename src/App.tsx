@@ -31,6 +31,7 @@ import { Step3CompoundIntelligenceTest } from './components/Step3CompoundIntelli
 import { ShowcaseSeniorFamilyScenario } from './components/ShowcaseSeniorFamilyScenario'
 import { ShowcaseDeviceIntegrationPage } from './components/ShowcaseDeviceIntegrationPage'
 import { AIIntelligenceDashboard } from './components/AIIntelligenceDashboard'
+import { ShowcaseWatchdog } from './components/ShowcaseWatchdog'
 import { useShowcase } from './contexts/ShowcaseContext'
 import { SHOWCASE_MODE } from './config/showcase'
 import { useState, useEffect } from 'react'
@@ -299,6 +300,7 @@ function App() {
     <>
       {SHOWCASE_MODE && <ShowcaseNavPanel />}
       {SHOWCASE_MODE && <ShowcaseHomeButton />}
+      {SHOWCASE_MODE && <ShowcaseWatchdog />}
       <HostShell key={remountKey} />
     </>
   )

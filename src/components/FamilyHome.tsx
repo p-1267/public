@@ -57,6 +57,7 @@ const FamilyHomeContent: React.FC = () => {
   const [recentCare, setRecentCare] = useState<any[]>([]);
   const [devices, setDevices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedResidentId) {
@@ -67,21 +68,91 @@ const FamilyHomeContent: React.FC = () => {
   const loadData = async () => {
     if (!selectedResidentId) return;
 
-    const [residentRes, medsRes, metricsRes, careRes, devicesRes] = await Promise.all([
-      supabase.from('residents').select('*').eq('id', selectedResidentId).maybeSingle(),
-      supabase.from('resident_medications').select('*').eq('resident_id', selectedResidentId).eq('is_active', true),
-      supabase.rpc('get_recent_health_metrics', { p_resident_id: selectedResidentId, p_hours: 24 }),
-      supabase.from('observation_events').select('*').eq('resident_id', selectedResidentId).order('recorded_at', { ascending: false }).limit(5),
-      supabase.from('device_registry').select('*').eq('resident_id', selectedResidentId)
-    ]);
+    console.log('[FAMILY_HOME_LOAD] Starting data load for resident:', selectedResidentId);
+    setLoadError(null);
 
-    setResident(residentRes.data);
-    setMedications(medsRes.data || []);
-    setHealthMetrics(metricsRes.data || []);
-    setRecentCare(careRes.data || []);
-    setDevices(devicesRes.data || []);
-    setLoading(false);
+    try {
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('DATA_LOAD_TIMEOUT')), 10000)
+      );
+
+      const dataPromise = Promise.all([
+        supabase.from('residents').select('*').eq('id', selectedResidentId).maybeSingle(),
+        supabase.from('resident_medications').select('*').eq('resident_id', selectedResidentId).eq('is_active', true),
+        supabase.rpc('get_recent_health_metrics', { p_resident_id: selectedResidentId, p_hours: 24 }),
+        supabase.from('observation_events').select('*').eq('resident_id', selectedResidentId).order('recorded_at', { ascending: false }).limit(5),
+        supabase.from('device_registry').select('*').eq('resident_id', selectedResidentId)
+      ]);
+
+      const [residentRes, medsRes, metricsRes, careRes, devicesRes] = await Promise.race([
+        dataPromise,
+        timeoutPromise
+      ]) as any;
+
+      setResident(residentRes.data);
+      setMedications(medsRes.data || []);
+      setHealthMetrics(metricsRes.data || []);
+      setRecentCare(careRes.data || []);
+      setDevices(devicesRes.data || []);
+      console.log('[FAMILY_HOME_LOAD] Data load complete');
+    } catch (err: any) {
+      console.error('[FAMILY_HOME_LOAD] Error:', err);
+      if (err.message === 'DATA_LOAD_TIMEOUT') {
+        setLoadError('Loading timeout (10s). Database may be slow.');
+      } else {
+        setLoadError(`Error loading data: ${err.message}`);
+      }
+    } finally {
+      console.log('[FAMILY_HOME_LOAD] Clearing loading state');
+      setLoading(false);
+    }
   };
+
+  if (loadError) {
+    return (
+      <div style={{
+        maxWidth: '900px',
+        margin: '0 auto',
+        padding: '64px 24px',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        textAlign: 'center'
+      }}>
+        <div style={{
+          backgroundColor: '#fef2f2',
+          border: '2px solid #ef4444',
+          borderRadius: '12px',
+          padding: '48px',
+          color: '#991b1b'
+        }}>
+          <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
+            Loading Error
+          </h2>
+          <p style={{ fontSize: '16px', marginBottom: '24px' }}>
+            {loadError}
+          </p>
+          <button
+            onClick={() => {
+              setLoadError(null);
+              setLoading(true);
+              loadData();
+            }}
+            style={{
+              background: '#ef4444',
+              color: 'white',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              border: 'none',
+              fontSize: '16px',
+              fontWeight: '600',
+              cursor: 'pointer'
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
