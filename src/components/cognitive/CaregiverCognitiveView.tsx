@@ -7,6 +7,7 @@ import { AllClearDisplay } from './AllClearDisplay';
 import { Level4ActivePanel } from '../Level4ActivePanel';
 import { CareContextProvider } from '../../contexts/CareContextProvider';
 import { ResidentContextCard } from '../ResidentContextCard';
+import { RoleScopeCard } from './RoleScopeCard';
 import { useShowcase } from '../../contexts/ShowcaseContext';
 
 export const CaregiverCognitiveView: React.FC = () => {
@@ -15,6 +16,7 @@ export const CaregiverCognitiveView: React.FC = () => {
   const [signals, setSignals] = useState<IntelligenceSignal[]>([]);
   const [situations, setSituations] = useState<ResidentSituation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -137,13 +139,25 @@ export const CaregiverCognitiveView: React.FC = () => {
 
   const allClear = tasks.length === 0 && signals.length === 0;
 
+  const uniqueSignals = signals.reduce((acc, signal) => {
+    const key = `${signal.title}_${signal.residentName}_${signal.category}`;
+    if (!acc.some(s => `${s.title}_${s.residentName}_${s.category}` === key)) {
+      acc.push(signal);
+    }
+    return acc;
+  }, [] as IntelligenceSignal[]);
+
+  const urgentSignals = uniqueSignals.filter(s => s.type === 'warning');
+  const infoSignals = uniqueSignals.filter(s => s.type === 'info');
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-slate-900">Your Work</h1>
-          <Level4ActivePanel />
         </div>
+
+        <RoleScopeCard />
 
         {selectedResidentId && (
           <CareContextProvider residentId={selectedResidentId}>
@@ -158,11 +172,25 @@ export const CaregiverCognitiveView: React.FC = () => {
           />
         ) : (
           <>
-            {signals.length > 0 && (
+            {tasks.length > 0 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-800">Intelligence Signals</h2>
+                <h2 className="text-2xl font-bold text-slate-900">Today's Tasks</h2>
+                <NowNextLater
+                  tasks={tasks}
+                  onTaskClick={handleTaskClick}
+                  onStartTask={handleStartTask}
+                />
+              </div>
+            )}
+
+            {urgentSignals.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                  <span className="text-red-600">⚠️</span>
+                  Watch / Risk
+                </h2>
                 <div className="grid gap-4">
-                  {signals.map(signal => (
+                  {urgentSignals.map(signal => (
                     <IntelligenceSignalCard
                       key={signal.id}
                       signal={signal}
@@ -170,6 +198,29 @@ export const CaregiverCognitiveView: React.FC = () => {
                     />
                   ))}
                 </div>
+              </div>
+            )}
+
+            {infoSignals.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-slate-800">Updates</h2>
+                <div className="grid gap-3">
+                  {infoSignals.slice(0, 3).map(signal => (
+                    <IntelligenceSignalCard
+                      key={signal.id}
+                      signal={signal}
+                      onAction={() => console.log('Signal action:', signal.id)}
+                    />
+                  ))}
+                </div>
+                {infoSignals.length > 3 && (
+                  <button
+                    onClick={() => setShowAdvanced(true)}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Show {infoSignals.length - 3} more updates
+                  </button>
+                )}
               </div>
             )}
 
@@ -188,16 +239,20 @@ export const CaregiverCognitiveView: React.FC = () => {
               </div>
             )}
 
-            {tasks.length > 0 && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-800">Today's Tasks</h2>
-                <NowNextLater
-                  tasks={tasks}
-                  onTaskClick={handleTaskClick}
-                  onStartTask={handleStartTask}
-                />
-              </div>
-            )}
+            <div className="mt-8 border-t border-slate-200 pt-6">
+              <button
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="flex items-center gap-2 w-full text-left text-slate-700 hover:text-slate-900 font-semibold"
+              >
+                <span className="text-xl">{showAdvanced ? '▼' : '▶'}</span>
+                Advanced Intelligence (Details)
+              </button>
+              {showAdvanced && (
+                <div className="mt-4">
+                  <Level4ActivePanel showToggle={false} />
+                </div>
+              )}
+            </div>
           </>
         )}
 
