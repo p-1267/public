@@ -9,6 +9,8 @@ export function ShowcaseScenarioSelector() {
   const [isSeeding, setIsSeeding] = useState(false);
   const [seedError, setSeedError] = useState<string | null>(null);
   const [currentRoute, setCurrentRoute] = useState('');
+  const [seedingStartTime, setSeedingStartTime] = useState<number | null>(null);
+  const requestIdRef = React.useRef(0);
 
   useEffect(() => {
     const checkHash = () => {
@@ -25,17 +27,28 @@ export function ShowcaseScenarioSelector() {
   };
 
   const handleScenarioClick = async (scenarioId: string) => {
-    console.log('[SCENARIO_CLICK] scenarioId=', scenarioId);
+    // Single-flight guard
+    if (isSeeding) {
+      console.warn('[SCENARIO_CLICK] Already seeding, ignoring click');
+      return;
+    }
+
+    // Increment request ID (stale request cancellation)
+    requestIdRef.current += 1;
+    const localRequestId = requestIdRef.current;
+
+    console.log('[SCENARIO_CLICK] scenarioId=', scenarioId, 'requestId=', localRequestId);
     setIsSeeding(true);
     setSeedError(null);
+    setSeedingStartTime(Date.now());
 
     try {
       const contextConfig = getContextConfig(scenarioId);
       const residentId = 'b0000000-0000-0000-0000-000000000001';
 
-      // Create care_context with timing
+      // Create care_context with timeout (20s)
       console.time('[TIMING] create_or_update_care_context');
-      const { data: contextData, error: contextError } = await supabase.rpc('create_or_update_care_context', {
+      const contextPromise = supabase.rpc('create_or_update_care_context', {
         p_resident_id: residentId,
         p_management_mode: contextConfig.management_mode,
         p_care_setting: contextConfig.care_setting,
@@ -43,7 +56,23 @@ export function ShowcaseScenarioSelector() {
         p_supervision_enabled: contextConfig.supervision_enabled,
         p_agency_id: contextConfig.agency_id
       });
+
+      const contextTimeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('CONTEXT_TIMEOUT')), 20000)
+      );
+
+      const { data: contextData, error: contextError } = await Promise.race([
+        contextPromise,
+        contextTimeoutPromise.then(() => ({ data: null, error: { message: 'Context creation timeout (20s)' } }))
+      ]) as any;
+
       console.timeEnd('[TIMING] create_or_update_care_context');
+
+      // Check if stale
+      if (localRequestId !== requestIdRef.current) {
+        console.warn('[SCENARIO_CLICK] Stale request (context), aborting');
+        return;
+      }
 
       if (contextError) {
         console.error('[ShowcaseScenarioSelector] Context creation failed:', contextError);
@@ -53,22 +82,28 @@ export function ShowcaseScenarioSelector() {
 
       console.log('[SCENARIO_RPC_OK] care_context_id=', contextData);
 
-      // Seed with timeout protection (45s max)
+      // Seed with timeout protection (20s max)
       console.time('[TIMING] seed_active_context');
       const seedPromise = supabase.rpc('seed_active_context', {
         p_care_context_id: contextData
       });
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT')), 45000)
+      const seedTimeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('SEED_TIMEOUT')), 20000)
       );
 
       const { data: seedData, error: seedError } = await Promise.race([
         seedPromise,
-        timeoutPromise.then(() => ({ data: null, error: { message: 'Seeding timeout (45s)' } }))
+        seedTimeoutPromise.then(() => ({ data: null, error: { message: 'Seeding timeout (20s)' } }))
       ]) as any;
 
       console.timeEnd('[TIMING] seed_active_context');
+
+      // Check if stale
+      if (localRequestId !== requestIdRef.current) {
+        console.warn('[SCENARIO_CLICK] Stale request (seed), aborting');
+        return;
+      }
 
       if (seedError) {
         console.error('[ShowcaseScenarioSelector] Seed failed:', seedError);
@@ -85,14 +120,15 @@ export function ShowcaseScenarioSelector() {
 
     } catch (err: any) {
       console.error('[ShowcaseScenarioSelector] Exception:', err);
-      if (err.message === 'TIMEOUT') {
-        setSeedError('Seeding timeout (45s). Database may be slow. Try again.');
+      if (err.message === 'CONTEXT_TIMEOUT' || err.message === 'SEED_TIMEOUT') {
+        setSeedError('Operation timeout (20s). Database may be slow. Use Reset Showcase below.');
       } else {
         setSeedError(`Error: ${err.message}`);
       }
     } finally {
       console.log('[SCENARIO_COMPLETE] isSeeding → false');
       setIsSeeding(false);
+      setSeedingStartTime(null);
     }
   };
 
@@ -149,6 +185,15 @@ export function ShowcaseScenarioSelector() {
           agency_id: null
         };
     }
+  };
+
+  const handleResetShowcase = () => {
+    console.log('[RESET_SHOWCASE] Resetting all state');
+    setIsSeeding(false);
+    setSeedError(null);
+    setSeedingStartTime(null);
+    requestIdRef.current += 1; // Invalidate any pending requests
+    window.location.reload(); // Hard reset
   };
 
   return (
@@ -334,17 +379,37 @@ export function ShowcaseScenarioSelector() {
 
           {isSeeding && (
             <div className="p-5 bg-blue-50 border border-blue-200 mb-6">
-              <div className="flex items-center">
-                <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full mr-3"></div>
-                <span className="text-sm font-medium text-blue-900">Creating care context and seeding database...</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full mr-3"></div>
+                  <span className="text-sm font-medium text-blue-900">Creating care context and seeding database...</span>
+                </div>
+                {seedingStartTime && Date.now() - seedingStartTime > 10000 && (
+                  <button
+                    onClick={handleResetShowcase}
+                    className="text-xs font-semibold text-blue-700 hover:text-blue-900 underline"
+                  >
+                    Reset Showcase
+                  </button>
+                )}
               </div>
             </div>
           )}
 
           {seedError && (
             <div className="p-5 bg-red-50 border border-red-200 mb-6">
-              <h4 className="font-semibold text-red-900 mb-2">Error</h4>
-              <p className="text-sm text-red-800">{seedError}</p>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h4 className="font-semibold text-red-900 mb-2">Error</h4>
+                  <p className="text-sm text-red-800">{seedError}</p>
+                </div>
+                <button
+                  onClick={handleResetShowcase}
+                  className="text-xs font-semibold text-red-700 hover:text-red-900 underline whitespace-nowrap ml-4"
+                >
+                  Reset Showcase
+                </button>
+              </div>
             </div>
           )}
 
