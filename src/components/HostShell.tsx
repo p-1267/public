@@ -185,6 +185,15 @@ export function HostShell() {
           </div>
 
           {SHOWCASE_MODE && <ScenarioWiringInspector />}
+
+          {/* DEBUG BADGE */}
+          <div className="fixed bottom-4 right-4 bg-green-900 text-white p-3 rounded text-xs font-mono space-y-1 shadow-lg z-50 max-w-xs">
+            <div className="font-bold text-green-300 mb-2">✅ HOSTSHELL MOUNTED</div>
+            <div><span className="text-gray-300">currentStep:</span> {showcaseContext.currentStep}</div>
+            <div><span className="text-gray-300">currentScenario:</span> {showcaseContext.currentScenario?.id || 'null'}</div>
+            <div><span className="text-gray-300">currentRole:</span> {showcaseContext.currentRole || 'null'}</div>
+            <div><span className="text-gray-300">selectedResidentId:</span> {showcaseContext.selectedResidentId?.slice(0, 8) || 'null'}...</div>
+          </div>
         </div>
       )
     }

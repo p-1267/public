@@ -1,13 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useShowcase } from '../contexts/ShowcaseContext';
 import { SHOWCASE_SCENARIOS } from '../config/showcase';
 import { SCENARIO_META } from '../config/scenarioArchitecture';
 import { supabase } from '../lib/supabase';
 
 export function ShowcaseScenarioSelector() {
-  const { currentScenario, setScenario, advanceToNextStep } = useShowcase();
+  const { currentScenario, setScenario, advanceToNextStep, currentStep, currentRole, selectedResidentId } = useShowcase();
   const [isSeeding, setIsSeeding] = useState(false);
   const [seedError, setSeedError] = useState<string | null>(null);
+  const [currentRoute, setCurrentRoute] = useState('');
+
+  useEffect(() => {
+    const checkHash = () => {
+      const hash = window.location.hash.replace('#', '');
+      setCurrentRoute(hash);
+    };
+    checkHash();
+    window.addEventListener('hashchange', checkHash);
+    return () => window.removeEventListener('hashchange', checkHash);
+  }, []);
 
   const handleDirectAccess = (route: string) => {
     window.location.hash = route;
@@ -330,6 +341,16 @@ export function ShowcaseScenarioSelector() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* DEBUG BADGE */}
+      <div className="fixed bottom-4 right-4 bg-black text-white p-3 rounded text-xs font-mono space-y-1 shadow-lg z-50 max-w-xs">
+        <div className="font-bold text-yellow-300 mb-2">🔍 SELECTOR DEBUG</div>
+        <div><span className="text-gray-400">currentStep:</span> {currentStep}</div>
+        <div><span className="text-gray-400">currentScenario:</span> {currentScenario?.id || 'null'}</div>
+        <div><span className="text-gray-400">currentRole:</span> {currentRole || 'null'}</div>
+        <div><span className="text-gray-400">selectedResidentId:</span> {selectedResidentId?.slice(0, 8) || 'null'}...</div>
+        <div><span className="text-gray-400">currentRoute:</span> {currentRoute || 'empty'}</div>
       </div>
     </div>
   );
