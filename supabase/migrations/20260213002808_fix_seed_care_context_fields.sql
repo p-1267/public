@@ -1,15 +1,11 @@
 /*
-  # Fix seed_active_context family_notification_preferences column
-
-  ## Change
-  - Fix INSERT INTO family_notification_preferences to use correct column `user_id` instead of `family_user_id`
-  - Fix UNIQUE constraint to match table definition
-  - Remove columns that don't exist in table schema
-
-  ## Schema Alignment
-  - Table uses: user_id, resident_id (NOT family_user_id)
-  - Table does NOT have: notify_medication_due, notify_vitals_abnormal, notify_appointment_reminder, notification_method
-  - Table DOES have: channel_in_app, channel_push, channel_sms, channel_email, summary_frequency
+  # Fix seed_active_context to use correct care_contexts schema
+  
+  ## Changes
+  - Use resident_id from care_contexts (not resident_name/resident_dob)
+  - Get resident data from residents table
+  - Use management_mode instead of operating_mode
+  - Derive has_family from management_mode
 */
 
 CREATE OR REPLACE FUNCTION seed_active_context(p_care_context_id uuid)
@@ -27,6 +23,7 @@ DECLARE
   v_senior_user_id uuid;
   v_role_id uuid;
   v_department_id uuid;
+  v_has_family boolean;
 BEGIN
   -- Get context
   SELECT * INTO v_context FROM care_contexts WHERE id = p_care_context_id;
@@ -35,28 +32,34 @@ BEGIN
   END IF;
 
   -- Get or create agency
-  INSERT INTO agencies (id, name, status) VALUES ('a0000000-0000-0000-0000-000000000010', 'Showcase Care Agency', 'active')
-  ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name RETURNING id INTO v_agency_id;
+  v_agency_id := COALESCE(v_context.agency_id, 'a0000000-0000-0000-0000-000000000010'::uuid);
+  INSERT INTO agencies (id, name, status) VALUES (v_agency_id, 'Showcase Care Agency', 'active')
+  ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
 
-  -- Create resident
-  INSERT INTO residents (id, full_name, date_of_birth, status, agency_id, metadata)
-  VALUES (
-    'b0000000-0000-0000-0000-000000000001',
-    v_context.resident_name,
-    COALESCE(v_context.resident_dob, '1940-01-01'::date),
-    'active',
-    v_agency_id,
-    jsonb_build_object(
-      'gender', 'FEMALE',
-      'room_number', '101A',
-      'admission_date', CURRENT_DATE - INTERVAL '6 months'
+  -- Get resident or create if not exists
+  SELECT * INTO v_resident FROM residents WHERE id = v_context.resident_id;
+  IF NOT FOUND THEN
+    INSERT INTO residents (id, full_name, date_of_birth, status, agency_id, metadata)
+    VALUES (
+      v_context.resident_id,
+      'Dorothy Parker',
+      '1940-01-01'::date,
+      'active',
+      v_agency_id,
+      jsonb_build_object(
+        'gender', 'FEMALE',
+        'room_number', '101A',
+        'admission_date', CURRENT_DATE - INTERVAL '6 months'
+      )
     )
-  )
-  ON CONFLICT (id) DO UPDATE SET full_name = EXCLUDED.full_name, metadata = EXCLUDED.metadata
-  RETURNING * INTO v_resident;
+    RETURNING * INTO v_resident;
+  END IF;
+
+  -- Determine if has family (FAMILY_MANAGED or has family_admin_user_id)
+  v_has_family := (v_context.management_mode = 'FAMILY_MANAGED' OR v_context.family_admin_user_id IS NOT NULL);
 
   -- If has family: Create family user + link + preferences
-  IF v_context.has_family THEN
+  IF v_has_family THEN
     -- Create family user
     INSERT INTO user_profiles (id, role_id, display_name, is_active, agency_id)
     SELECT 'a0000000-0000-0000-0000-000000000002', r.id, 'Robert Miller', true, v_agency_id
@@ -69,7 +72,7 @@ BEGIN
     VALUES (v_family_user_id, v_resident.id, 'active')
     ON CONFLICT DO NOTHING;
 
-    -- Create notification preferences (using correct columns)
+    -- Create notification preferences
     INSERT INTO family_notification_preferences (user_id, resident_id, channel_in_app, channel_push, channel_sms, channel_email, summary_frequency)
     VALUES (v_family_user_id, v_resident.id, true, true, true, false, 'DAILY')
     ON CONFLICT (user_id, resident_id) DO NOTHING;
@@ -104,10 +107,10 @@ BEGIN
   END IF;
 
   -- If senior self-managing: Create senior user + link
-  IF v_context.operating_mode = 'INDEPENDENT' THEN
+  IF v_context.management_mode = 'SELF' THEN
     -- Create senior user
     INSERT INTO user_profiles (id, role_id, display_name, is_active, agency_id)
-    SELECT 'a0000000-0000-0000-0000-000000000001', r.id, v_context.resident_name, true, v_agency_id
+    SELECT 'a0000000-0000-0000-0000-000000000001', r.id, v_resident.full_name, true, v_agency_id
     FROM roles r WHERE r.name = 'SENIOR'
     ON CONFLICT (id) DO UPDATE SET display_name = EXCLUDED.display_name
     RETURNING id INTO v_senior_user_id;
@@ -166,4 +169,4 @@ END;
 $$;
 
 -- Grant execute to anon for showcase mode
-GRANT EXECUTE ON FUNCTION seed_active_context(uuid) TO anon;
+GRANT EXECUTE ON FUNCTION seed_active_context(uuid) TO anon, authenticated;

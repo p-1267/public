@@ -1,15 +1,10 @@
 /*
-  # Fix seed_active_context family_notification_preferences column
-
-  ## Change
-  - Fix INSERT INTO family_notification_preferences to use correct column `user_id` instead of `family_user_id`
-  - Fix UNIQUE constraint to match table definition
-  - Remove columns that don't exist in table schema
-
-  ## Schema Alignment
-  - Table uses: user_id, resident_id (NOT family_user_id)
-  - Table does NOT have: notify_medication_due, notify_vitals_abnormal, notify_appointment_reminder, notification_method
-  - Table DOES have: channel_in_app, channel_push, channel_sms, channel_email, summary_frequency
+  # Fix seed_active_context residents schema mismatch
+  
+  ## Changes
+  - Remove invalid columns: gender, room_number, admission_date
+  - Use metadata jsonb field for these values instead
+  - Align with actual residents table schema
 */
 
 CREATE OR REPLACE FUNCTION seed_active_context(p_care_context_id uuid)
@@ -38,11 +33,11 @@ BEGIN
   INSERT INTO agencies (id, name, status) VALUES ('a0000000-0000-0000-0000-000000000010', 'Showcase Care Agency', 'active')
   ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name RETURNING id INTO v_agency_id;
 
-  -- Create resident
+  -- Create resident (using valid columns only)
   INSERT INTO residents (id, full_name, date_of_birth, status, agency_id, metadata)
   VALUES (
     'b0000000-0000-0000-0000-000000000001',
-    v_context.resident_name,
+    COALESCE(v_context.resident_name, 'Dorothy Parker'),
     COALESCE(v_context.resident_dob, '1940-01-01'::date),
     'active',
     v_agency_id,
@@ -107,7 +102,7 @@ BEGIN
   IF v_context.operating_mode = 'INDEPENDENT' THEN
     -- Create senior user
     INSERT INTO user_profiles (id, role_id, display_name, is_active, agency_id)
-    SELECT 'a0000000-0000-0000-0000-000000000001', r.id, v_context.resident_name, true, v_agency_id
+    SELECT 'a0000000-0000-0000-0000-000000000001', r.id, COALESCE(v_context.resident_name, 'Dorothy Parker'), true, v_agency_id
     FROM roles r WHERE r.name = 'SENIOR'
     ON CONFLICT (id) DO UPDATE SET display_name = EXCLUDED.display_name
     RETURNING id INTO v_senior_user_id;
@@ -166,4 +161,4 @@ END;
 $$;
 
 -- Grant execute to anon for showcase mode
-GRANT EXECUTE ON FUNCTION seed_active_context(uuid) TO anon;
+GRANT EXECUTE ON FUNCTION seed_active_context(uuid) TO anon, authenticated;

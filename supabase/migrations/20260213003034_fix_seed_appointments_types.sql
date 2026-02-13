@@ -1,15 +1,8 @@
 /*
-  # Fix seed_active_context family_notification_preferences column
-
-  ## Change
-  - Fix INSERT INTO family_notification_preferences to use correct column `user_id` instead of `family_user_id`
-  - Fix UNIQUE constraint to match table definition
-  - Remove columns that don't exist in table schema
-
-  ## Schema Alignment
-  - Table uses: user_id, resident_id (NOT family_user_id)
-  - Table does NOT have: notify_medication_due, notify_vitals_abnormal, notify_appointment_reminder, notification_method
-  - Table DOES have: channel_in_app, channel_push, channel_sms, channel_email, summary_frequency
+  # Fix seed_active_context appointments types
+  
+  ## Changes
+  - Use valid appointment_type values: DOCTOR_VISIT, SCREENING
 */
 
 CREATE OR REPLACE FUNCTION seed_active_context(p_care_context_id uuid)
@@ -27,113 +20,100 @@ DECLARE
   v_senior_user_id uuid;
   v_role_id uuid;
   v_department_id uuid;
+  v_has_family boolean;
+  v_entered_by_user uuid;
 BEGIN
-  -- Get context
   SELECT * INTO v_context FROM care_contexts WHERE id = p_care_context_id;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Care context not found: %', p_care_context_id;
   END IF;
 
-  -- Get or create agency
-  INSERT INTO agencies (id, name, status) VALUES ('a0000000-0000-0000-0000-000000000010', 'Showcase Care Agency', 'active')
-  ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name RETURNING id INTO v_agency_id;
+  v_agency_id := COALESCE(v_context.agency_id, 'a0000000-0000-0000-0000-000000000010'::uuid);
+  INSERT INTO agencies (id, name, status) VALUES (v_agency_id, 'Showcase Care Agency', 'active')
+  ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
 
-  -- Create resident
-  INSERT INTO residents (id, full_name, date_of_birth, status, agency_id, metadata)
-  VALUES (
-    'b0000000-0000-0000-0000-000000000001',
-    v_context.resident_name,
-    COALESCE(v_context.resident_dob, '1940-01-01'::date),
-    'active',
-    v_agency_id,
-    jsonb_build_object(
-      'gender', 'FEMALE',
-      'room_number', '101A',
-      'admission_date', CURRENT_DATE - INTERVAL '6 months'
+  SELECT * INTO v_resident FROM residents WHERE id = v_context.resident_id;
+  IF NOT FOUND THEN
+    INSERT INTO residents (id, full_name, date_of_birth, status, agency_id, metadata)
+    VALUES (
+      v_context.resident_id,
+      'Dorothy Parker',
+      '1940-01-01'::date,
+      'active',
+      v_agency_id,
+      jsonb_build_object('gender', 'FEMALE', 'room_number', '101A', 'admission_date', CURRENT_DATE - INTERVAL '6 months')
     )
-  )
-  ON CONFLICT (id) DO UPDATE SET full_name = EXCLUDED.full_name, metadata = EXCLUDED.metadata
-  RETURNING * INTO v_resident;
+    RETURNING * INTO v_resident;
+  END IF;
 
-  -- If has family: Create family user + link + preferences
-  IF v_context.has_family THEN
-    -- Create family user
+  v_has_family := (v_context.management_mode = 'FAMILY_MANAGED' OR v_context.family_admin_user_id IS NOT NULL);
+
+  IF v_has_family THEN
     INSERT INTO user_profiles (id, role_id, display_name, is_active, agency_id)
     SELECT 'a0000000-0000-0000-0000-000000000002', r.id, 'Robert Miller', true, v_agency_id
     FROM roles r WHERE r.name = 'FAMILY_ADMIN'
     ON CONFLICT (id) DO UPDATE SET display_name = EXCLUDED.display_name
     RETURNING id INTO v_family_user_id;
 
-    -- Link family to resident
     INSERT INTO family_resident_links (family_user_id, resident_id, status)
     VALUES (v_family_user_id, v_resident.id, 'active')
     ON CONFLICT DO NOTHING;
 
-    -- Create notification preferences (using correct columns)
     INSERT INTO family_notification_preferences (user_id, resident_id, channel_in_app, channel_push, channel_sms, channel_email, summary_frequency)
     VALUES (v_family_user_id, v_resident.id, true, true, true, false, 'DAILY')
     ON CONFLICT (user_id, resident_id) DO NOTHING;
   END IF;
 
-  -- If has caregivers: Create caregiver users + department + assignments
   IF v_context.service_model IN ('DIRECT_HIRE', 'AGENCY_HOME_CARE', 'AGENCY_FACILITY') THEN
-    -- Create caregiver user
     INSERT INTO user_profiles (id, role_id, display_name, is_active, agency_id)
     SELECT 'a0000000-0000-0000-0000-000000000003', r.id, 'Mike Chen', true, v_agency_id
     FROM roles r WHERE r.name = 'CAREGIVER'
     ON CONFLICT (id) DO UPDATE SET display_name = EXCLUDED.display_name
     RETURNING id INTO v_caregiver_user_id;
 
-    -- Create supervisor user
     INSERT INTO user_profiles (id, role_id, display_name, is_active, agency_id)
     SELECT 'a0000000-0000-0000-0000-000000000005', r.id, 'Sarah Johnson', true, v_agency_id
     FROM roles r WHERE r.name = 'SUPERVISOR'
     ON CONFLICT (id) DO UPDATE SET display_name = EXCLUDED.display_name
     RETURNING id INTO v_supervisor_user_id;
 
-    -- Create department
     INSERT INTO departments (id, name, agency_id, supervisor_id, status)
     VALUES ('d0000000-0000-0000-0000-000000000001', 'Personal Care', v_agency_id, v_supervisor_user_id, 'active')
     ON CONFLICT (id) DO UPDATE SET supervisor_id = EXCLUDED.supervisor_id
     RETURNING id INTO v_department_id;
 
-    -- Assign caregiver to resident
     INSERT INTO caregiver_assignments (caregiver_user_id, resident_id, assigned_by, status)
     VALUES (v_caregiver_user_id, v_resident.id, v_supervisor_user_id, 'active')
     ON CONFLICT DO NOTHING;
   END IF;
 
-  -- If senior self-managing: Create senior user + link
-  IF v_context.operating_mode = 'INDEPENDENT' THEN
-    -- Create senior user
+  IF v_context.management_mode = 'SELF' THEN
     INSERT INTO user_profiles (id, role_id, display_name, is_active, agency_id)
-    SELECT 'a0000000-0000-0000-0000-000000000001', r.id, v_context.resident_name, true, v_agency_id
+    SELECT 'a0000000-0000-0000-0000-000000000001', r.id, v_resident.full_name, true, v_agency_id
     FROM roles r WHERE r.name = 'SENIOR'
     ON CONFLICT (id) DO UPDATE SET display_name = EXCLUDED.display_name
     RETURNING id INTO v_senior_user_id;
 
-    -- Link senior to resident
     INSERT INTO senior_resident_links (senior_user_id, resident_id, status)
     VALUES (v_senior_user_id, v_resident.id, 'active')
     ON CONFLICT DO NOTHING;
   END IF;
 
-  -- Create sample medications
-  INSERT INTO resident_medications (resident_id, medication_name, dosage, frequency, route, is_active, prescribed_by)
+  v_entered_by_user := COALESCE(v_senior_user_id, v_family_user_id, v_caregiver_user_id, v_supervisor_user_id);
+
+  INSERT INTO resident_medications (resident_id, medication_name, dosage, frequency, route, schedule, prescriber_name, is_prn, is_controlled, start_date, is_active, entered_by)
   VALUES
-    (v_resident.id, 'Lisinopril', '10mg', 'DAILY', 'ORAL', true, 'Dr. Smith'),
-    (v_resident.id, 'Metformin', '500mg', 'TWICE_DAILY', 'ORAL', true, 'Dr. Smith'),
-    (v_resident.id, 'Atorvastatin', '20mg', 'DAILY', 'ORAL', true, 'Dr. Jones')
+    (v_resident.id, 'Lisinopril', '10mg', 'DAILY', 'ORAL', '{"times": ["09:00"]}'::jsonb, 'Dr. Smith', false, false, CURRENT_DATE, true, v_entered_by_user),
+    (v_resident.id, 'Metformin', '500mg', 'TWICE_DAILY', 'ORAL', '{"times": ["09:00", "21:00"]}'::jsonb, 'Dr. Smith', false, false, CURRENT_DATE, true, v_entered_by_user),
+    (v_resident.id, 'Atorvastatin', '20mg', 'DAILY', 'ORAL', '{"times": ["21:00"]}'::jsonb, 'Dr. Jones', false, false, CURRENT_DATE, true, v_entered_by_user)
   ON CONFLICT DO NOTHING;
 
-  -- Create sample appointments
-  INSERT INTO appointments (resident_id, appointment_type, scheduled_at, provider_name, location, status)
+  INSERT INTO appointments (resident_id, appointment_type, title, scheduled_at, provider_name, location, status)
   VALUES
-    (v_resident.id, 'CHECKUP', CURRENT_TIMESTAMP + INTERVAL '3 days', 'Dr. Smith', 'Main Clinic', 'SCHEDULED'),
-    (v_resident.id, 'LABWORK', CURRENT_TIMESTAMP + INTERVAL '1 week', 'Quest Labs', 'Laboratory', 'SCHEDULED')
+    (v_resident.id, 'DOCTOR_VISIT', 'Annual Physical Exam', CURRENT_TIMESTAMP + INTERVAL '3 days', 'Dr. Smith', 'Main Clinic', 'SCHEDULED'),
+    (v_resident.id, 'SCREENING', 'Routine Blood Work', CURRENT_TIMESTAMP + INTERVAL '1 week', 'Quest Labs', 'Laboratory', 'SCHEDULED')
   ON CONFLICT DO NOTHING;
 
-  -- Create sample tasks for caregiver
   IF v_caregiver_user_id IS NOT NULL THEN
     INSERT INTO tasks (resident_id, category, title, description, state, priority, scheduled_for, owner_user_id)
     VALUES
@@ -143,7 +123,6 @@ BEGIN
     ON CONFLICT DO NOTHING;
   END IF;
 
-  -- Create sample health metrics
   INSERT INTO health_metrics (resident_id, metric_category, metric_type, value, unit, recorded_at, data_source, confidence_level)
   VALUES
     (v_resident.id, 'VITALS', 'blood_pressure_systolic', 128, 'mmHg', CURRENT_TIMESTAMP - INTERVAL '1 hour', 'DEVICE', 'HIGH'),
@@ -165,5 +144,4 @@ BEGIN
 END;
 $$;
 
--- Grant execute to anon for showcase mode
-GRANT EXECUTE ON FUNCTION seed_active_context(uuid) TO anon;
+GRANT EXECUTE ON FUNCTION seed_active_context(uuid) TO anon, authenticated;
