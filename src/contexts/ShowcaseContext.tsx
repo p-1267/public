@@ -144,8 +144,16 @@ export function ShowcaseProvider({ children }: { children: ReactNode }) {
     const start = Date.now();
     console.log('[ShowcaseContext] 🌱 Seeding database...');
 
+    // Create abort controller with 15s timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      console.warn('[ShowcaseContext] ⏱️ Seed timeout after 15s - continuing without wait');
+    }, 15000);
+
     supabase.rpc('seed_senior_family_scenario')
       .then(({ data, error }) => {
+        clearTimeout(timeoutId);
         const elapsed = Date.now() - start;
         if (error) {
           console.warn('[ShowcaseContext] ⚠️ Seed error (' + elapsed + 'ms):', error.message);
@@ -157,7 +165,12 @@ export function ShowcaseProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch(err => {
-        console.warn('[ShowcaseContext] ⚠️ Seed failed:', err.message);
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          console.warn('[ShowcaseContext] ⚠️ Seed aborted by timeout');
+        } else {
+          console.warn('[ShowcaseContext] ⚠️ Seed failed:', err.message);
+        }
       });
   };
 

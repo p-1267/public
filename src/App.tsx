@@ -39,8 +39,15 @@ import { useState, useEffect } from 'react'
 
 function App() {
   console.log('[APP_INIT] App component rendering...');
+  console.log('[BOOT] App.tsx mounted - React is running');
+  console.log('[ENV_CHECK] Supabase URL present:', !!import.meta.env.VITE_SUPABASE_URL);
+  console.log('[ENV_CHECK] Supabase Key present:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+
   const { isAuthenticated, currentRole, currentScenario, currentStep } = useShowcase()
   const [currentRoute, setCurrentRoute] = useState('')
+  const [watchdogVisible, setWatchdogVisible] = useState(false)
+  const [watchdogInfo, setWatchdogInfo] = useState<any>({})
+
   console.log('[APP_STATE] currentStep:', currentStep, 'currentRole:', currentRole, 'currentRoute:', currentRoute);
 
 
@@ -54,6 +61,96 @@ function App() {
     window.addEventListener('hashchange', checkHash)
     return () => window.removeEventListener('hashchange', checkHash)
   }, [])
+
+  // Watchdog timer - shows debug panel if app hangs
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      console.warn('[WATCHDOG] App still loading after 8s - showing debug panel');
+      setWatchdogInfo({
+        timestamp: new Date().toISOString(),
+        currentStep,
+        currentRole,
+        currentScenario: currentScenario?.id,
+        isAuthenticated,
+        currentRoute,
+        hash: window.location.hash,
+        pathname: window.location.pathname
+      });
+      setWatchdogVisible(true);
+    }, 8000);
+
+    return () => clearTimeout(timer);
+  }, [])
+
+  // WATCHDOG DEBUG PANEL (visible if app hangs >8s)
+  if (watchdogVisible) {
+    return (
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.95)',
+        color: 'white',
+        fontFamily: 'monospace',
+        fontSize: '14px',
+        padding: '40px',
+        overflowY: 'auto',
+        zIndex: 99999
+      }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <h1 style={{ fontSize: '24px', marginBottom: '20px', color: '#ff6b6b' }}>
+            🔴 WATCHDOG: App Loading Timeout Detected
+          </h1>
+          <div style={{ background: '#222', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+            <div style={{ marginBottom: '10px' }}><strong>✅ App Mounted:</strong> React is running</div>
+            <div style={{ marginBottom: '10px' }}><strong>📍 Current Step:</strong> {watchdogInfo.currentStep}</div>
+            <div style={{ marginBottom: '10px' }}><strong>👤 Current Role:</strong> {watchdogInfo.currentRole || 'NONE'}</div>
+            <div style={{ marginBottom: '10px' }}><strong>🎬 Scenario:</strong> {watchdogInfo.currentScenario || 'NONE'}</div>
+            <div style={{ marginBottom: '10px' }}><strong>🔐 Authenticated:</strong> {String(watchdogInfo.isAuthenticated)}</div>
+            <div style={{ marginBottom: '10px' }}><strong>🔗 Route:</strong> {watchdogInfo.currentRoute || '(empty)'}</div>
+            <div style={{ marginBottom: '10px' }}><strong>📍 Hash:</strong> {watchdogInfo.hash || '(none)'}</div>
+            <div style={{ marginBottom: '10px' }}><strong>⏰ Timestamp:</strong> {watchdogInfo.timestamp}</div>
+          </div>
+          <div style={{ background: '#1a1a2e', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '18px', marginBottom: '10px' }}>📋 Likely Causes:</h2>
+            <ul style={{ lineHeight: '1.8' }}>
+              <li>Database seeding RPC hanging (check Supabase logs)</li>
+              <li>Network request timeout (check DevTools Network tab)</li>
+              <li>Missing environment variables</li>
+              <li>Infinite loading state in component</li>
+            </ul>
+          </div>
+          <div style={{ background: '#0f3460', padding: '20px', borderRadius: '8px' }}>
+            <h2 style={{ fontSize: '18px', marginBottom: '10px' }}>🔧 Next Steps:</h2>
+            <ol style={{ lineHeight: '1.8' }}>
+              <li>Open DevTools Console - check for red errors</li>
+              <li>Open DevTools Network - find pending request</li>
+              <li>Check Supabase dashboard for RPC failures</li>
+              <li>Click button below to force bypass and continue</li>
+            </ol>
+          </div>
+          <button
+            onClick={() => {
+              console.log('[WATCHDOG] User clicked bypass - hiding panel');
+              setWatchdogVisible(false);
+            }}
+            style={{
+              marginTop: '20px',
+              padding: '12px 24px',
+              background: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '16px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            🚀 Hide and Continue
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (currentRoute === 'showcase-dashboard') {
     return (
