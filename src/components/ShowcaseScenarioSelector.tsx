@@ -201,7 +201,7 @@ export function ShowcaseScenarioSelector() {
               Interactive Senior + Family Experience
             </h2>
             <button
-              onClick={() => handleScenarioClick('independent-senior-family')}
+              onClick={() => handleScenarioClick('self-managed')}
               disabled={isSeeding}
               className="w-full text-left p-6 border-2 border-gray-500 hover:border-gray-700 transition-colors bg-gradient-to-r from-gray-50 to-pink-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
