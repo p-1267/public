@@ -9,11 +9,9 @@ const ROLE_OPTIONS = [
 ];
 
 export function ShowcaseNavPanel() {
-  const { currentRole, currentScenario, dataStore, selectedResidentId, setSelectedResident, setRole, logout, goBackToScenarioSelection } = useShowcase();
+  const { currentRole, currentScenario, setRole, goBackToScenarioSelection } = useShowcase();
 
-  if (!dataStore || !currentScenario) return null;
-
-  const residents = dataStore.residents;
+  if (!currentScenario) return null;
 
   return (
     <div style={{
@@ -49,21 +47,6 @@ export function ShowcaseNavPanel() {
         }}>
           SHOWCASE
         </div>
-        <button
-          onClick={logout}
-          style={{
-            padding: '6px 12px',
-            backgroundColor: '#ef4444',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '4px',
-            fontSize: '12px',
-            fontWeight: 600,
-            cursor: 'pointer'
-          }}
-        >
-          Logout
-        </button>
       </div>
 
       <div style={{ marginBottom: '12px' }}>
@@ -148,53 +131,17 @@ export function ShowcaseNavPanel() {
         </button>
       </div>
 
-      {(currentRole === 'SENIOR' || currentRole === 'FAMILY_VIEWER') && residents.length > 1 && (
-        <div style={{ marginTop: '16px' }}>
-          <label style={{
-            display: 'block',
-            fontSize: '12px',
-            fontWeight: 600,
-            color: '#64748b',
-            marginBottom: '8px',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px'
-          }}>
-            View As
-          </label>
-          <select
-            value={selectedResidentId || ''}
-            onChange={(e) => setSelectedResident(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #e2e8f0',
-              borderRadius: '6px',
-              fontSize: '14px',
-              fontWeight: 500,
-              color: '#0f172a',
-              cursor: 'pointer'
-            }}
-          >
-            {residents.map((resident) => (
-              <option key={resident.id} value={resident.id}>
-                {resident.full_name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
       <div style={{
         marginTop: '16px',
         padding: '12px',
-        backgroundColor: '#fef3c7',
-        border: '1px solid #fbbf24',
+        backgroundColor: '#dcfce7',
+        border: '1px solid #22c55e',
         borderRadius: '6px',
         fontSize: '11px',
-        color: '#92400e',
+        color: '#166534',
         lineHeight: '1.4'
       }}>
-        <strong>Simulated data.</strong> All actions are in-memory only.
+        <strong>Live Database.</strong> All data backed by Supabase. Role switching changes visibility without reseeding.
       </div>
 
       <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>

@@ -23,8 +23,42 @@ import { DepartmentsPage } from './DepartmentsPage';
 import { AIIntelligenceDashboard } from './AIIntelligenceDashboard';
 import { SupervisorResidentsPage } from './showcase/SupervisorResidentsPage';
 import { SupervisorAutomationPage } from './showcase/SupervisorAutomationPage';
+import { useShowcase } from '../contexts/ShowcaseContext';
+import { isRoleActiveInScenario } from '../config/roleVisibilityMatrix';
 
 export const SupervisorHome: React.FC = () => {
+  const { currentRole, currentScenario } = useShowcase();
+
+  if (!isRoleActiveInScenario(currentRole, currentScenario?.id || null)) {
+    return (
+      <div style={{
+        maxWidth: '900px',
+        margin: '0 auto',
+        padding: '64px 24px',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        textAlign: 'center'
+      }}>
+        <div style={{
+          backgroundColor: '#fef3c7',
+          border: '2px solid #fbbf24',
+          borderRadius: '12px',
+          padding: '48px',
+          color: '#92400e'
+        }}>
+          <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
+            Role Not Active in This Scenario
+          </h2>
+          <p style={{ fontSize: '16px', marginBottom: '24px' }}>
+            The <strong>{currentRole}</strong> role is not available in scenario <strong>{currentScenario?.id}</strong>.
+          </p>
+          <p style={{ fontSize: '14px', color: '#78350f' }}>
+            Supervisors are only active in scenarios D (Agency Home Care) and E (Agency Facility).
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ShowcaseNavWrapper role="SUPERVISOR">
       {(activeTab) => {
