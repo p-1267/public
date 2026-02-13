@@ -175,11 +175,9 @@ export function ShowcaseScenarioSelector() {
               Interactive Senior + Family Experience
             </h2>
             <button
-              onClick={() => {
-                console.log('[ShowcaseScenarioSelector] Launching Senior+Family interactive demo');
-                advanceToNextStep('independent-senior-family');
-              }}
-              className="w-full text-left p-6 border-2 border-gray-500 hover:border-gray-700 transition-colors bg-gradient-to-r from-gray-50 to-pink-50"
+              onClick={() => handleScenarioClick('independent-senior-family')}
+              disabled={isSeeding}
+              className="w-full text-left p-6 border-2 border-gray-500 hover:border-gray-700 transition-colors bg-gradient-to-r from-gray-50 to-pink-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
