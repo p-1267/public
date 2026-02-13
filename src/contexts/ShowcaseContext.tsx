@@ -162,16 +162,27 @@ export function ShowcaseProvider({ children }: { children: ReactNode }) {
   };
 
   const advanceToNextStep = (scenarioIdOverride?: string) => {
+    console.log('[STEP_TRANSITION] advanceToNextStep called with:', scenarioIdOverride);
     const scenario = scenarioIdOverride
       ? SHOWCASE_SCENARIOS.find(s => s.id === scenarioIdOverride)
       : currentScenario;
 
+    console.log('[STEP_TRANSITION] Found scenario:', scenario?.id, scenario?.name);
+
     if (scenario) {
+      console.log('[STEP_TRANSITION] Setting state:', {
+        scenarioId: scenario.id,
+        defaultRole: scenario.defaultRole,
+        step: 'ROLE_INTERFACE'
+      });
       setCurrentScenario(scenario);
       setCurrentStep('ROLE_INTERFACE');
       setCurrentRole(scenario.defaultRole);
       setIsAuthenticated(true);
       setSelectedResidentId('b0000000-0000-0000-0000-000000000001');
+      console.log('[STEP_TRANSITION] State set complete');
+    } else {
+      console.error('[STEP_TRANSITION] Scenario NOT found for ID:', scenarioIdOverride);
     }
   };
 

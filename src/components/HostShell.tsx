@@ -150,7 +150,7 @@ export function HostShell() {
   }
 
   if (SHOWCASE_MODE && showcaseContext?.currentRole && showcaseContext.selectedResidentId) {
-    console.log('[HostShell] SHOWCASE_MODE=true, currentRole:', showcaseContext.currentRole);
+    console.log('[HOSTSHELL_MOUNT] SHOWCASE_MODE=true, currentRole:', showcaseContext.currentRole, 'selectedResidentId:', showcaseContext.selectedResidentId);
     const PersonaHome = {
       'SENIOR': SeniorHome,
       'FAMILY_VIEWER': FamilyHome,
@@ -160,10 +160,10 @@ export function HostShell() {
       'AGENCY_ADMIN': AgencyAdminHome,
     }[showcaseContext.currentRole]
 
-    console.log('[HostShell] PersonaHome component:', PersonaHome?.name || 'not found');
+    console.log('[HOSTSHELL_MOUNT] PersonaHome component:', PersonaHome?.name || 'not found');
 
     if (PersonaHome) {
-      console.log('[HostShell] Returning PersonaHome for role:', showcaseContext.currentRole);
+      console.log('[HOSTSHELL_MOUNT] Rendering PersonaHome for role:', showcaseContext.currentRole);
 
       return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-blue-50">

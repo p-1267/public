@@ -253,10 +253,14 @@ function App() {
 
   // SHOWCASE_MODE: State-driven routing (no hash dependency)
   if (SHOWCASE_MODE && !currentRoute) {
+    console.log('[APP_RENDER] SHOWCASE_MODE routing - currentStep:', currentStep, 'currentRole:', currentRole, 'currentScenario:', currentScenario?.id);
+
     if (currentStep === 'SCENARIO_SELECT') {
+      console.log('[APP_RENDER] Rendering ShowcaseScenarioSelector');
       return <ShowcaseScenarioSelector />
     }
 
+    console.log('[APP_RENDER] Rendering HostShell with role:', currentRole);
     const remountKey = `${currentRole || 'none'}`
     return (
       <>
