@@ -30,13 +30,11 @@ export function ShowcaseScenarioSelector() {
     setSeedError(null);
 
     try {
-      // Map scenario ID to care context configuration
       const contextConfig = getContextConfig(scenarioId);
-
-      // Get or create resident (use fixed showcase resident ID)
       const residentId = 'b0000000-0000-0000-0000-000000000001';
 
-      // Create or update care_context
+      // Create care_context with timing
+      console.time('[TIMING] create_or_update_care_context');
       const { data: contextData, error: contextError } = await supabase.rpc('create_or_update_care_context', {
         p_resident_id: residentId,
         p_management_mode: contextConfig.management_mode,
@@ -45,37 +43,55 @@ export function ShowcaseScenarioSelector() {
         p_supervision_enabled: contextConfig.supervision_enabled,
         p_agency_id: contextConfig.agency_id
       });
+      console.timeEnd('[TIMING] create_or_update_care_context');
 
       if (contextError) {
         console.error('[ShowcaseScenarioSelector] Context creation failed:', contextError);
         setSeedError(`Failed to create care context: ${contextError.message}`);
-        setIsSeeding(false);
         return;
       }
 
       console.log('[SCENARIO_RPC_OK] care_context_id=', contextData);
 
-      // Seed active context based on care_context configuration
-      const { data: seedData, error: seedError } = await supabase.rpc('seed_active_context', {
+      // Seed with timeout protection (45s max)
+      console.time('[TIMING] seed_active_context');
+      const seedPromise = supabase.rpc('seed_active_context', {
         p_care_context_id: contextData
       });
 
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), 45000)
+      );
+
+      const { data: seedData, error: seedError } = await Promise.race([
+        seedPromise,
+        timeoutPromise.then(() => ({ data: null, error: { message: 'Seeding timeout (45s)' } }))
+      ]) as any;
+
+      console.timeEnd('[TIMING] seed_active_context');
+
       if (seedError) {
         console.error('[ShowcaseScenarioSelector] Seed failed:', seedError);
-        setSeedError(`Failed to seed data: ${seedError.message}`);
-        setIsSeeding(false);
+        setSeedError(`Seeding failed: ${seedError.message}. Try again or contact support.`);
         return;
       }
 
       console.log('[SCENARIO_SEED_OK]', seedData);
 
-      // Update showcase context state → triggers App.tsx re-render → HostShell
+      // Advance to role interface
+      console.time('[TIMING] advanceToNextStep');
       advanceToNextStep(scenarioId);
+      console.timeEnd('[TIMING] advanceToNextStep');
 
-      setIsSeeding(false);
     } catch (err: any) {
       console.error('[ShowcaseScenarioSelector] Exception:', err);
-      setSeedError(`Error: ${err.message}`);
+      if (err.message === 'TIMEOUT') {
+        setSeedError('Seeding timeout (45s). Database may be slow. Try again.');
+      } else {
+        setSeedError(`Error: ${err.message}`);
+      }
+    } finally {
+      console.log('[SCENARIO_COMPLETE] isSeeding → false');
       setIsSeeding(false);
     }
   };
