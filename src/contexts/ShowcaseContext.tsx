@@ -262,8 +262,7 @@ export function ShowcaseProvider({ children }: { children: ReactNode }) {
 
   const showToast = (message: string) => {
     setToastMessage(message);
-    const timer = setTimeout(() => setToastMessage(null), 3000);
-    return () => clearTimeout(timer);
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const setScenario = (scenarioId: string) => {
