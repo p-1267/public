@@ -64,8 +64,10 @@ function App() {
 
   // Watchdog timer - shows debug panel if app hangs
   useEffect(() => {
+    if (!SHOWCASE_MODE) return;
+
     const timer = setTimeout(() => {
-      console.warn('[WATCHDOG] App still loading after 8s - showing debug panel');
+      console.warn('[WATCHDOG] App still loading after 10s - showing debug panel');
       setWatchdogInfo({
         timestamp: new Date().toISOString(),
         currentStep,
@@ -77,12 +79,12 @@ function App() {
         pathname: window.location.pathname
       });
       setWatchdogVisible(true);
-    }, 8000);
+    }, 10000);
 
     return () => clearTimeout(timer);
   }, [])
 
-  // WATCHDOG DEBUG PANEL (visible if app hangs >8s)
+  // WATCHDOG DEBUG PANEL (visible if app hangs >10s in showcase mode)
   if (watchdogVisible) {
     return (
       <div style={{
@@ -128,25 +130,46 @@ function App() {
               <li>Click button below to force bypass and continue</li>
             </ol>
           </div>
-          <button
-            onClick={() => {
-              console.log('[WATCHDOG] User clicked bypass - hiding panel');
-              setWatchdogVisible(false);
-            }}
-            style={{
-              marginTop: '20px',
-              padding: '12px 24px',
-              background: '#4CAF50',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '16px',
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            🚀 Hide and Continue
-          </button>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+            <button
+              onClick={() => {
+                console.log('[WATCHDOG] User clicked bypass - hiding panel');
+                setWatchdogVisible(false);
+              }}
+              style={{
+                padding: '12px 24px',
+                background: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '16px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              🚀 Hide and Continue
+            </button>
+            {SHOWCASE_MODE && (
+              <button
+                onClick={() => {
+                  console.log('[WATCHDOG] User clicked reset - hard reloading');
+                  window.location.reload();
+                }}
+                style={{
+                  padding: '12px 24px',
+                  background: '#f44336',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                🔄 Reset Showcase
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );

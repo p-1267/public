@@ -72,6 +72,7 @@ export function ShowcaseProvider({ children }: { children: ReactNode }) {
   const [currentStep, setCurrentStep] = useState<ShowcaseStep>('SCENARIO_SELECT');
   const [operatingMode, setOperatingModeState] = useState<OperatingMode>('AGENCY');
   const [urlInitialized, setUrlInitialized] = useState(false);
+  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
 
   // URL-driven scenario entry (non-blocking)
   useEffect(() => {
@@ -141,8 +142,10 @@ export function ShowcaseProvider({ children }: { children: ReactNode }) {
 
   // Idempotent background seeding - never blocks UI
   const seedScenarioDatabase = () => {
+    const requestId = `seed-${Date.now()}`;
+    setCurrentRequestId(requestId);
     const start = Date.now();
-    console.log('[ShowcaseContext] 🌱 Seeding database...');
+    console.log('[ShowcaseContext] 🌱 Seeding database...', requestId);
 
     // Create abort controller with 15s timeout
     const controller = new AbortController();
@@ -154,6 +157,13 @@ export function ShowcaseProvider({ children }: { children: ReactNode }) {
     supabase.rpc('seed_senior_family_scenario')
       .then(({ data, error }) => {
         clearTimeout(timeoutId);
+
+        // Ignore stale responses
+        if (currentRequestId !== requestId) {
+          console.log('[ShowcaseContext] 🚫 Ignoring stale seed response:', requestId);
+          return;
+        }
+
         const elapsed = Date.now() - start;
         if (error) {
           console.warn('[ShowcaseContext] ⚠️ Seed error (' + elapsed + 'ms):', error.message);

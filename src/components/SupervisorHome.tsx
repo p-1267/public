@@ -20,7 +20,7 @@ import { DailyWorkPlanner } from './DailyWorkPlanner';
 import { DepartmentalWorkboard } from './DepartmentalWorkboard';
 import { ShowcaseDepartmentView } from './ShowcaseDepartmentView';
 import { DepartmentsPage } from './DepartmentsPage';
-import { AIIntelligenceDashboard } from './AIIntelligenceDashboard';
+import { EnterpriseIntelligencePanel } from './EnterpriseIntelligencePanel';
 import { SupervisorResidentsPage } from './showcase/SupervisorResidentsPage';
 import { SupervisorAutomationPage } from './showcase/SupervisorAutomationPage';
 import { SupervisorTriageStrip } from './SupervisorTriageStrip';
@@ -74,7 +74,7 @@ export const SupervisorHome: React.FC = () => {
               </div>
             );
           case 'ai-intelligence':
-            return <AIIntelligenceDashboard />;
+            return <EnterpriseIntelligencePanel />;
           case 'scheduling':
             return <DailyWorkPlanner />;
           case 'alerts':
