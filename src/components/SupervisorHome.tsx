@@ -24,7 +24,7 @@ import { EnterpriseIntelligencePanel } from './EnterpriseIntelligencePanel';
 import { SupervisorResidentsPage } from './showcase/SupervisorResidentsPage';
 import { SupervisorAutomationPage } from './showcase/SupervisorAutomationPage';
 import { SupervisorTriageStrip } from './SupervisorTriageStrip';
-import { SupervisorOperationalConsole } from './SupervisorOperationalConsole';
+import { SupervisorDashboardCommandCenter } from './SupervisorDashboardCommandCenter';
 import { useShowcase } from '../contexts/ShowcaseContext';
 import { isRoleActiveInScenario } from '../config/roleVisibilityMatrix';
 
@@ -66,7 +66,7 @@ export const SupervisorHome: React.FC = () => {
       {(activeTab) => {
         switch (activeTab) {
           case 'home':
-            return <SupervisorOperationalConsole />;
+            return <SupervisorDashboardCommandCenter />;
           case 'departments':
             return (
               <div className="p-6">
