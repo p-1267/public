@@ -1,89 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import { useShowcase } from '../../contexts/ShowcaseContext';
 import { IntelligenceSignalCard, IntelligenceSignal } from './IntelligenceSignalCard';
 import { AllClearDisplay } from './AllClearDisplay';
 import { BrainEvidenceStrip } from './BrainEvidenceStrip';
 import { NumericEvidence } from './NumericEvidence';
-import { Level4ActivePanel } from '../Level4ActivePanel';
 import { WhyExplanation } from './WhyExplanation';
 
-const mockSignals: IntelligenceSignal[] = [
-  {
-    id: 's1',
-    type: 'critical',
-    title: 'Medication overdue - Maria Rodriguez',
-    summary: 'Lisinopril 10mg scheduled for 9:00 AM has not been administered (48 min overdue)',
-    timestamp: '3 min ago',
-    residentName: 'Maria Rodriguez',
-    category: 'Medication',
-    why: {
-      summary: 'Medication administration window exceeded; timely administration critical for blood pressure management',
-      observed: [
-        'Scheduled time: 9:00 AM',
-        'Current time: 9:48 AM',
-        'No administration logged in care_logs',
-        'Caregiver shift started on time at 7:00 AM'
-      ],
-      rulesFired: [
-        'Medication overdue detection: time_since_due > 30 minutes',
-        'Critical medication flag: blood pressure control',
-        'Adherence risk: missed administration impacts efficacy'
-      ],
-      dataUsed: [
-        'medication_administration_schedule',
-        'care_logs (medication events)',
-        'resident_medications (criticality flags)',
-        'shift_attendance'
-      ],
-      cannotConclude: [
-        'Whether medication was given without documentation',
-        'Reason for delay (staffing, emergency, resident refusal)',
-        'Clinical appropriateness of delay',
-        'Current resident blood pressure status'
-      ],
-      humanAction: 'Verify medication status with on-floor caregiver and document reason for delay if administered'
-    },
-    actionable: true,
-    suggestedAction: 'Contact Caregiver'
-  },
-  {
-    id: 's2',
-    type: 'warning',
-    title: 'Pattern detected: Late medication administration',
-    summary: 'Maria Rodriguez blood pressure meds administered 30+ min late 3 times this week',
-    timestamp: '15 min ago',
-    residentName: 'Maria Rodriguez',
-    category: 'Medication',
-    why: {
-      summary: 'Consistent late administration pattern may indicate workflow issue affecting medication efficacy',
-      observed: [
-        'Monday 1/13: administered 9:32 AM (scheduled 9:00 AM)',
-        'Wednesday 1/15: administered 9:28 AM (scheduled 9:00 AM)',
-        'Friday 1/17: administered 9:45 AM (scheduled 9:00 AM)',
-        'Pattern window: 7 days'
-      ],
-      rulesFired: [
-        'Medication timing deviation > 30 min',
-        'Pattern detection: 3+ occurrences within 7 days',
-        'Compliance threshold exceeded'
-      ],
-      dataUsed: [
-        'care_logs.medication_administration (last 7 days)',
-        'resident_medications.schedule',
-        'compliance_rules (30 min window)'
-      ],
-      cannotConclude: [
-        'Clinical impact on resident (requires physician evaluation)',
-        'Root cause (staffing, workflow, priority conflicts)',
-        'Whether delays are clinically justified'
-      ],
-      humanAction: 'Review 9 AM staffing levels and consider task prioritization adjustment or schedule modification'
-    },
-    actionable: true,
-    suggestedAction: 'Review Schedule'
-  }
-];
-
 export const SupervisorExceptionsView: React.FC = () => {
+  const { mockAgencyId } = useShowcase();
+  const [signals, setSignals] = useState<IntelligenceSignal[]>([]);
+  const [loading, setLoading] = useState(true);
   const [expandedSignal, setExpandedSignal] = useState<string | null>(null);
   const [showAllClear, setShowAllClear] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -93,13 +20,80 @@ export const SupervisorExceptionsView: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const criticalCount = mockSignals.filter(s => s.type === 'critical').length;
-  const warningCount = mockSignals.filter(s => s.type === 'warning').length;
+  useEffect(() => {
+    if (!mockAgencyId) return;
+    loadSignals();
+  }, [mockAgencyId]);
+
+  const loadSignals = async () => {
+    if (!mockAgencyId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('intelligence_signals')
+        .select('*')
+        .eq('agency_id', mockAgencyId)
+        .eq('dismissed', false)
+        .order('detected_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      // Map DB signals to component format
+      const mapped: IntelligenceSignal[] = (data || []).map((s: any) => ({
+        id: s.id,
+        type: s.severity?.toLowerCase() === 'critical' ? 'critical' : 'warning',
+        title: s.title || s.description,
+        summary: s.description,
+        timestamp: formatTimestamp(s.detected_at),
+        residentName: s.resident_name || 'Unknown',
+        category: s.category || 'General',
+        why: {
+          summary: s.reasoning || 'Intelligence analysis',
+          observed: [],
+          rulesFired: [],
+          dataUsed: [],
+          cannotConclude: [],
+          humanAction: (s.suggested_actions && s.suggested_actions[0]) || 'Review and take appropriate action'
+        },
+        actionable: s.requires_human_action,
+        suggestedAction: (s.suggested_actions && s.suggested_actions[0]) || 'Review'
+      }));
+
+      setSignals(mapped);
+    } catch (err) {
+      console.error('[SupervisorExceptionsView] Error loading signals:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatTimestamp = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 60) return `${diffMins} min ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return `${Math.floor(diffHours / 24)} day${Math.floor(diffHours / 24) > 1 ? 's' : ''} ago`;
+  };
+
+  const criticalCount = signals.filter(s => s.type === 'critical').length;
+  const warningCount = signals.filter(s => s.type === 'warning').length;
   const onTrackCount = 12;
 
   const handleSignalAction = (signalId: string) => {
     console.log('Signal action:', signalId);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-gray-950 flex items-center justify-center">
+        <div className="text-white text-xl">Loading intelligence signals...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-gray-950 p-8">
@@ -107,10 +101,8 @@ export const SupervisorExceptionsView: React.FC = () => {
         <BrainEvidenceStrip
           lastScan={currentTime.toLocaleTimeString()}
           rulesEvaluated={27}
-          signalsGenerated={mockSignals.length}
+          signalsGenerated={signals.length}
         />
-
-        <Level4ActivePanel showToggle={false} />
 
         <header className="mb-10">
           <h1 className="text-6xl font-black text-white mb-4 tracking-tight">Supervisor Dashboard</h1>
@@ -152,7 +144,7 @@ export const SupervisorExceptionsView: React.FC = () => {
         </header>
 
         <main>
-          {showAllClear || mockSignals.length === 0 ? (
+          {showAllClear || signals.length === 0 ? (
             <AllClearDisplay
               message="No exceptions detected"
               details={[
@@ -165,7 +157,7 @@ export const SupervisorExceptionsView: React.FC = () => {
             />
           ) : (
             <div className="space-y-6">
-              {mockSignals.map(signal => (
+              {signals.map(signal => (
                 <div key={signal.id}>
                   <IntelligenceSignalCard
                     signal={signal}

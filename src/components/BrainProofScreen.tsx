@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useShowcase } from '../contexts/ShowcaseContext';
 
 interface JobStatus {
   name: string;
@@ -27,7 +28,7 @@ interface BrainOutput {
 }
 
 export const BrainProofScreen: React.FC = () => {
-  const { showcaseData } = useShowcaseData();
+  const { selectedResidentId } = useShowcase();
   const [jobs, setJobs] = useState<JobStatus[]>([]);
   const [signals, setSignals] = useState<Signal[]>([]);
   const [outputs, setOutputs] = useState<BrainOutput[]>([]);

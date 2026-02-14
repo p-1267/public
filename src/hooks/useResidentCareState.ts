@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { residentCareStateService, ResidentCareState } from '../services/residentCareStateService';
 import { SHOWCASE_MODE } from '../config/showcase';
+import { useShowcase } from '../contexts/ShowcaseContext';
 
 export function useResidentCareState(residentId: string | null, agencyId?: string) {
   const [state, setState] = useState<ResidentCareState | null>(null);
@@ -24,7 +25,7 @@ export function useResidentCareState(residentId: string | null, agencyId?: strin
     } finally {
       setLoading(false);
     }
-  }, [residentId, agencyId, showcaseData]);
+  }, [residentId, agencyId]);
 
   useEffect(() => {
     loadState();
@@ -61,7 +62,7 @@ export function useResidentCareStateList(residentIds: string[], agencyId?: strin
   const [states, setStates] = useState<Map<string, ResidentCareState>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { showcaseData } = useShowcaseData();
+  const { selectedResidentId } = useShowcase();
 
   const loadStates = useCallback(async () => {
     if (residentIds.length === 0) {
@@ -76,7 +77,7 @@ export function useResidentCareStateList(residentIds: string[], agencyId?: strin
       if (SHOWCASE_MODE) {
         const mockStates = new Map<string, ResidentCareState>();
         residentIds.forEach(id => {
-          mockStates.set(id, generateShowcaseState(id, showcaseData));
+          mockStates.set(id, generateShowcaseState(id, selectedResidentId));
         });
         setStates(mockStates);
       } else {
@@ -95,7 +96,7 @@ export function useResidentCareStateList(residentIds: string[], agencyId?: strin
     } finally {
       setLoading(false);
     }
-  }, [residentIds, agencyId, showcaseData]);
+  }, [residentIds, agencyId, selectedResidentId]);
 
   useEffect(() => {
     loadStates();
@@ -131,107 +132,24 @@ export function useResidentCareStateList(residentIds: string[], agencyId?: strin
   return { states, loading, error, refresh };
 }
 
-function generateShowcaseState(residentId: string, showcaseData: any): ResidentCareState {
-  const resident = showcaseData.residents.find((r: any) => r.id === residentId);
+function generateShowcaseState(residentId: string, _mockResidentId: any): ResidentCareState {
   const now = new Date();
 
-  if (!resident) {
-    return {
-      residentId,
-      residentName: 'Unknown',
-      lastUpdated: now.toISOString(),
-      status: 'all_clear',
-      recentActions: [],
-      pendingActions: [],
-      activeSignals: [],
-      summary: {
-        completedLast2Hours: 0,
-        dueSoon: 0,
-        overdue: 0,
-        activeIncidents: 0,
-        activeSignals: 0
-      }
-    };
-  }
-
-  const recentMeds = showcaseData.medications
-    .filter((m: any) => m.resident_id === residentId && m.last_administered_at)
-    .slice(0, 3)
-    .map((m: any) => ({
-      id: m.id,
-      type: 'medication' as const,
-      status: 'completed' as const,
-      description: `${m.medication_name} ${m.dosage}`,
-      completedAt: m.last_administered_at,
-      completedBy: 'Caregiver',
-      sourceType: 'medication_administration',
-      sourceId: m.id,
-      createdAt: m.last_administered_at,
-      metadata: {}
-    }));
-
-  const dueMeds = showcaseData.medications
-    .filter((m: any) => m.resident_id === residentId && !m.is_prn && m.is_active)
-    .slice(0, 2)
-    .map((m: any, idx: number) => ({
-      id: `${m.id}-due`,
-      type: 'medication' as const,
-      status: 'due' as const,
-      description: `${m.medication_name} ${m.dosage}`,
-      scheduledTime: new Date(now.getTime() + (idx + 1) * 30 * 60 * 1000).toISOString(),
-      dueInMinutes: (idx + 1) * 30,
-      sourceType: 'resident_medications',
-      sourceId: m.id,
-      createdAt: now.toISOString()
-    }));
-
-  const signals = showcaseData.intelligenceSignals
-    ?.filter((s: any) => s.resident_id === residentId && s.status === 'active')
-    .slice(0, 2)
-    .map((s: any) => ({
-      id: s.id,
-      type: 'signal' as const,
-      status: 'active' as const,
-      description: s.message,
-      severity: s.severity,
-      sourceType: 'intelligence_signals',
-      sourceId: s.id,
-      createdAt: s.created_at,
-      metadata: {}
-    })) || [];
-
-  const completedLast2Hours = recentMeds.length;
-  const dueSoon = dueMeds.length;
-  const overdue = 0;
-  const activeSignals = signals.length;
-
-  let status: 'all_clear' | 'attention_needed' | 'urgent' = 'all_clear';
-  if (overdue > 0 || signals.some((s: any) => s.severity === 'critical')) {
-    status = 'urgent';
-  } else if (dueSoon > 0 || activeSignals > 0) {
-    status = 'attention_needed';
-  }
-
+  // Simplified: return DB-only state placeholder
   return {
-    residentId: resident.id,
-    residentName: resident.full_name,
+    residentId,
+    residentName: 'Resident',
     lastUpdated: now.toISOString(),
-    status,
-    recentActions: recentMeds,
-    pendingActions: dueMeds,
-    activeSignals: signals,
-    nextScheduledAction: dueMeds[0] ? {
-      type: dueMeds[0].type,
-      description: dueMeds[0].description,
-      scheduledTime: dueMeds[0].scheduledTime!,
-      dueInMinutes: dueMeds[0].dueInMinutes!
-    } : undefined,
+    status: 'all_clear',
+    recentActions: [],
+    pendingActions: [],
+    activeSignals: [],
     summary: {
-      completedLast2Hours,
-      dueSoon,
-      overdue,
+      completedLast2Hours: 0,
+      dueSoon: 0,
+      overdue: 0,
       activeIncidents: 0,
-      activeSignals
+      activeSignals: 0
     }
   };
 }

@@ -12,6 +12,7 @@ import {
 } from '../services/emergencyActionService';
 import { BrainBlockModal } from './BrainBlockModal';
 import { SHOWCASE_MODE } from '../config/showcase';
+import { useShowcase } from '../contexts/ShowcaseContext';
 
 interface EmergencyActionButtonsProps {
   emergencyState: EmergencyState;
@@ -51,7 +52,7 @@ export function EmergencyActionButtons({
   version,
 }: EmergencyActionButtonsProps) {
   const { hasPermission, loading: permissionsLoading } = useUserPermissions();
-  const { mockUserId, mockAgencyId, selectedResidentId } = useShowcaseData();
+  const { mockUserId, mockAgencyId, selectedResidentId } = useShowcase();
   const [pendingAction, setPendingAction] = useState<EmergencyActionType | null>(null);
   const [optimisticState, setOptimisticState] = useState<EmergencyState | null>(null);
   const [error, setError] = useState<string | null>(null);

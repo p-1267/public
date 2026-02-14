@@ -45,7 +45,7 @@ export const TodaysWorkView: React.FC = () => {
   const [expandedDepts, setExpandedDepts] = useState<Set<string>>(new Set(['NURSING', 'HOUSEKEEPING', 'KITCHEN']));
 
   const { startTask, completeTask, skipTask } = useTaskEngine();
-  const { mockUserId } = useShowcaseData();
+  const { mockUserId } = useShowcase();
 
   useEffect(() => {
     loadTodaysWork();

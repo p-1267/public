@@ -37,7 +37,7 @@ export const DepartmentalWorkboard: React.FC<DepartmentalWorkboardProps> = ({ de
   const [loading, setLoading] = useState(true);
   const [acknowledging, setAcknowledging] = useState<string | null>(null);
   const [responseText, setResponseText] = useState<Record<string, string>>({});
-  const { mockUserId } = useShowcaseData();
+  const { mockUserId } = useShowcase();
 
   useEffect(() => {
     loadPendingTasks();
