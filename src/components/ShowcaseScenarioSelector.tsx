@@ -11,8 +11,15 @@ export function ShowcaseScenarioSelector() {
   const [seedError, setSeedError] = useState<string | null>(null);
   const [currentRoute, setCurrentRoute] = useState('');
   const [seedingStartTime, setSeedingStartTime] = useState<number | null>(null);
+  const [componentMounted, setComponentMounted] = useState(false);
   const requestIdRef = React.useRef(0);
   console.log('[SCENARIO_SELECTOR_STATE] isSeeding:', isSeeding, 'seedError:', seedError);
+
+  // Signal that component has mounted successfully
+  useEffect(() => {
+    console.log('[SCENARIO_SELECTOR] ✅ Component mounted');
+    setComponentMounted(true);
+  }, []);
 
   useEffect(() => {
     const checkHash = () => {
@@ -56,8 +63,8 @@ export function ShowcaseScenarioSelector() {
       try {
         console.time('[BACKGROUND_SEED] Total time');
 
-        // Create care context
-        const { data: contextData, error: contextError } = await supabase.rpc('create_or_update_care_context', {
+        // Create care context with timeout
+        const contextPromise = supabase.rpc('create_or_update_care_context', {
           p_resident_id: residentId,
           p_management_mode: contextConfig.management_mode,
           p_care_setting: contextConfig.care_setting,
@@ -66,15 +73,33 @@ export function ShowcaseScenarioSelector() {
           p_agency_id: contextConfig.agency_id
         });
 
+        const contextTimeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Context creation timeout')), 15000)
+        );
+
+        const { data: contextData, error: contextError } = await Promise.race([
+          contextPromise,
+          contextTimeout
+        ]) as any;
+
         if (contextError) {
           console.warn('[BACKGROUND_SEED] Context creation warning:', contextError.message);
           return;
         }
 
-        // Seed data
-        const { data: seedData, error: seedError } = await supabase.rpc('seed_active_context', {
+        // Seed data with timeout
+        const seedPromise = supabase.rpc('seed_active_context', {
           p_care_context_id: contextData
         });
+
+        const seedTimeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Seed timeout')), 30000)
+        );
+
+        const { data: seedData, error: seedError } = await Promise.race([
+          seedPromise,
+          seedTimeout
+        ]) as any;
 
         console.timeEnd('[BACKGROUND_SEED] Total time');
 
@@ -163,6 +188,13 @@ export function ShowcaseScenarioSelector() {
     <div className="min-h-screen bg-white flex items-center justify-center p-6">
       <div className="max-w-5xl w-full">
         <div className="bg-white border border-gray-200 rounded p-8">
+          {componentMounted && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-center">
+              <div className="text-sm font-semibold text-green-800">
+                ✅ Showcase Loaded Successfully
+              </div>
+            </div>
+          )}
           <div className="text-center mb-10">
             <div className="inline-block bg-yellow-50 border border-yellow-400 rounded px-4 py-2 mb-6">
               <span className="text-xs font-bold text-yellow-800 uppercase tracking-wide">

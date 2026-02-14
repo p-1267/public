@@ -67,7 +67,7 @@ function App() {
     if (!SHOWCASE_MODE) return;
 
     const timer = setTimeout(() => {
-      console.warn('[WATCHDOG] App still loading after 10s - showing debug panel');
+      console.warn('[WATCHDOG] App still loading after 60s - showing debug panel');
       setWatchdogInfo({
         timestamp: new Date().toISOString(),
         currentStep,
@@ -79,7 +79,7 @@ function App() {
         pathname: window.location.pathname
       });
       setWatchdogVisible(true);
-    }, 10000);
+    }, 60000); // Increased to 60 seconds
 
     return () => clearTimeout(timer);
   }, [])
