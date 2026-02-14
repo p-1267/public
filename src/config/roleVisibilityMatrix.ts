@@ -38,7 +38,7 @@ interface VisibilityRule {
 const VISIBILITY_RULES: VisibilityRule[] = [
   {
     role: 'SENIOR',
-    scenarios: ['self-managed', 'family-managed', 'direct-hire', 'agency-home', 'agency-facility'],
+    scenarios: ['self-managed', 'family-managed', 'direct-hire', 'agency-home-care', 'agency-facility'],
     modules: [
       'SeniorHealthInputsModule',
       'SeniorMedicationsModule',
@@ -52,7 +52,7 @@ const VISIBILITY_RULES: VisibilityRule[] = [
   },
   {
     role: 'FAMILY_VIEWER',
-    scenarios: ['family-managed', 'direct-hire', 'agency-home', 'agency-facility'],
+    scenarios: ['family-managed', 'direct-hire', 'agency-home-care', 'agency-facility'],
     modules: [
       'FamilyHealthMonitoringModule',
       'FamilyCarePlanModule',
@@ -65,7 +65,7 @@ const VISIBILITY_RULES: VisibilityRule[] = [
   },
   {
     role: 'FAMILY_ADMIN',
-    scenarios: ['family-managed', 'direct-hire', 'agency-home', 'agency-facility'],
+    scenarios: ['family-managed', 'direct-hire', 'agency-home-care', 'agency-facility'],
     modules: [
       'FamilyHealthMonitoringModule',
       'FamilyCarePlanModule',
@@ -78,7 +78,7 @@ const VISIBILITY_RULES: VisibilityRule[] = [
   },
   {
     role: 'CAREGIVER',
-    scenarios: ['direct-hire', 'agency-home', 'agency-facility'],
+    scenarios: ['direct-hire', 'agency-home-care', 'agency-facility'],
     modules: [
       'TaskExecutionModule',
       'MedicationAdministrationModule',
@@ -91,7 +91,7 @@ const VISIBILITY_RULES: VisibilityRule[] = [
   },
   {
     role: 'SUPERVISOR',
-    scenarios: ['agency-home', 'agency-facility'],
+    scenarios: ['agency-home-care', 'agency-facility'],
     modules: [
       'SupervisorExceptionsModule',
       'SupervisorReviewModule',
@@ -105,7 +105,7 @@ const VISIBILITY_RULES: VisibilityRule[] = [
   },
   {
     role: 'AGENCY_ADMIN',
-    scenarios: ['agency-home', 'agency-facility'],
+    scenarios: ['agency-home-care', 'agency-facility'],
     modules: [
       'AgencyComplianceModule',
       'AgencyBillingModule',
