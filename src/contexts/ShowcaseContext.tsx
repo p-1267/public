@@ -147,17 +147,8 @@ export function ShowcaseProvider({ children }: { children: ReactNode }) {
     const start = Date.now();
     console.log('[ShowcaseContext] 🌱 Seeding database...', requestId);
 
-    // Create abort controller with 15s timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      controller.abort();
-      console.warn('[ShowcaseContext] ⏱️ Seed timeout after 15s - continuing without wait');
-    }, 15000);
-
     supabase.rpc('seed_senior_family_scenario')
       .then(({ data, error }) => {
-        clearTimeout(timeoutId);
-
         // Ignore stale responses
         if (currentRequestId !== requestId) {
           console.log('[ShowcaseContext] 🚫 Ignoring stale seed response:', requestId);
@@ -175,12 +166,7 @@ export function ShowcaseProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch(err => {
-        clearTimeout(timeoutId);
-        if (err.name === 'AbortError') {
-          console.warn('[ShowcaseContext] ⚠️ Seed aborted by timeout');
-        } else {
-          console.warn('[ShowcaseContext] ⚠️ Seed failed:', err.message);
-        }
+        console.warn('[ShowcaseContext] ⚠️ Seed failed:', err.message);
       });
   };
 
@@ -224,17 +210,7 @@ export function ShowcaseProvider({ children }: { children: ReactNode }) {
       // CRITICAL: Call RPC to seed database - Showcase = Live, single source of truth
       console.log('[ShowcaseContext] Seeding database (login)...');
 
-      // Add timeout protection
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Database seed timeout')), 10000)
-      );
-
-      const seedPromise = supabase.rpc('seed_senior_family_scenario');
-
-      const { data: seedData, error: seedError } = await Promise.race([
-        seedPromise,
-        timeoutPromise
-      ]) as any;
+      const { data: seedData, error: seedError } = await supabase.rpc('seed_senior_family_scenario');
 
       if (seedError) {
         console.error('[ShowcaseContext] Seed error:', seedError);
