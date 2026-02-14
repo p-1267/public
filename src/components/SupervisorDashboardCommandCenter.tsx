@@ -14,9 +14,11 @@ interface Escalation {
   status: string;
   escalated_at: string;
   required_response_by: string;
-  sla_hours: number;
-  is_sla_breach: boolean;
+  sla_hours_remaining: number;
+  sla_breached: boolean;
   assigned_to: string | null;
+  has_physician_notification: boolean;
+  notification_status: string | null;
 }
 
 interface KPI {
@@ -61,7 +63,7 @@ export function SupervisorDashboardCommandCenter() {
     // Calculate KPIs
     const activeCount = escalationData.filter(e => ['PENDING', 'IN_PROGRESS'].includes(e.status)).length;
     const criticalCount = escalationData.filter(e => e.priority === 'CRITICAL' && e.status !== 'RESOLVED').length;
-    const slaBreachCount = escalationData.filter(e => e.is_sla_breach).length;
+    const slaBreachCount = escalationData.filter(e => e.sla_breached).length;
     const mdNotifCount = escalationData.filter(e => e.escalation_type === 'PHYSICIAN_NOTIFICATION' && e.status !== 'NOTIFIED').length;
     const unassignedCount = escalationData.filter(e => !e.assigned_to && e.status === 'PENDING').length;
 
@@ -98,23 +100,21 @@ export function SupervisorDashboardCommandCenter() {
     }
   };
 
-  const getSLACountdown = (requiredBy: string, slaHours: number, isBreach: boolean) => {
-    const now = new Date();
-    const required = new Date(requiredBy);
-    const diff = required.getTime() - now.getTime();
-    const minutesLeft = Math.floor(diff / 60000);
-
+  const getSLACountdown = (requiredBy: string, hoursRemaining: number, isBreach: boolean) => {
     if (isBreach) {
-      const overdue = Math.abs(minutesLeft);
-      return <span className="text-red-700 font-bold">BREACHED {Math.floor(overdue / 60)}h {overdue % 60}m ago</span>;
+      const overdueHours = Math.abs(Math.floor(hoursRemaining));
+      const overdueMinutes = Math.abs(Math.floor((hoursRemaining % 1) * 60));
+      return <span className="text-red-700 font-bold">BREACHED {overdueHours}h {overdueMinutes}m ago</span>;
     }
 
-    if (minutesLeft < 60) {
+    if (hoursRemaining < 1) {
+      const minutesLeft = Math.floor(hoursRemaining * 60);
       return <span className="text-orange-700 font-semibold">{minutesLeft}m left</span>;
     }
 
-    const hoursLeft = Math.floor(minutesLeft / 60);
-    return <span className="text-slate-600">{hoursLeft}h {minutesLeft % 60}m left</span>;
+    const hours = Math.floor(hoursRemaining);
+    const minutes = Math.floor((hoursRemaining % 1) * 60);
+    return <span className="text-slate-600">{hours}h {minutes}m left</span>;
   };
 
   const handleAcknowledge = async (escalationId: string) => {
@@ -209,7 +209,7 @@ export function SupervisorDashboardCommandCenter() {
                         <span className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 bg-slate-100 rounded">
                           {esc.escalation_type.replace(/_/g, ' ')}
                         </span>
-                        {esc.is_sla_breach && (
+                        {esc.sla_breached && (
                           <span className="px-2 py-1 text-xs font-bold uppercase tracking-wide text-red-700 bg-red-100 rounded border border-red-300">
                             SLA BREACH
                           </span>
@@ -217,7 +217,7 @@ export function SupervisorDashboardCommandCenter() {
                       </div>
                       <div className="text-xs text-slate-500 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {getSLACountdown(esc.required_response_by, esc.sla_hours, esc.is_sla_breach)}
+                        {getSLACountdown(esc.required_response_by, esc.sla_hours_remaining, esc.sla_breached)}
                       </div>
                     </div>
 
