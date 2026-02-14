@@ -47,8 +47,14 @@ function App() {
   const [currentRoute, setCurrentRoute] = useState('')
   const [watchdogVisible, setWatchdogVisible] = useState(false)
   const [watchdogInfo, setWatchdogInfo] = useState<any>({})
+  const [appMounted, setAppMounted] = useState(false)
 
   console.log('[APP_STATE] currentStep:', currentStep, 'currentRole:', currentRole, 'currentRoute:', currentRoute);
+
+  useEffect(() => {
+    console.log('[APP_MOUNT] ✅ App component mounted successfully');
+    setAppMounted(true);
+  }, [])
 
 
   useEffect(() => {
@@ -62,30 +68,18 @@ function App() {
     return () => window.removeEventListener('hashchange', checkHash)
   }, [])
 
-  // Watchdog timer - shows debug panel if app hangs
+  // Watchdog timer - DISABLED for debugging
   useEffect(() => {
     if (!SHOWCASE_MODE) return;
 
-    const timer = setTimeout(() => {
-      console.warn('[WATCHDOG] App still loading after 60s - showing debug panel');
-      setWatchdogInfo({
-        timestamp: new Date().toISOString(),
-        currentStep,
-        currentRole,
-        currentScenario: currentScenario?.id,
-        isAuthenticated,
-        currentRoute,
-        hash: window.location.hash,
-        pathname: window.location.pathname
-      });
-      setWatchdogVisible(true);
-    }, 60000); // Increased to 60 seconds
+    // Watchdog disabled - not blocking UI anymore
+    console.log('[WATCHDOG] Watchdog timer disabled - UI will render normally');
 
-    return () => clearTimeout(timer);
+    return () => {};
   }, [])
 
-  // WATCHDOG DEBUG PANEL (visible if app hangs >10s in showcase mode)
-  if (watchdogVisible) {
+  // WATCHDOG DEBUG PANEL (DISABLED - will never show)
+  if (false && watchdogVisible) {
     return (
       <div style={{
         position: 'fixed',
@@ -381,7 +375,28 @@ function App() {
 
     if (currentStep === 'SCENARIO_SELECT') {
       console.log('[APP_RENDER] Rendering ShowcaseScenarioSelector');
-      return <ShowcaseScenarioSelector />
+      return (
+        <>
+          {appMounted && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              background: '#10b981',
+              color: 'white',
+              padding: '8px 16px',
+              textAlign: 'center',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              zIndex: 9999
+            }}>
+              ✅ App Loaded - Scenario Selector Active
+            </div>
+          )}
+          <ShowcaseScenarioSelector />
+        </>
+      )
     }
 
     console.log('[APP_RENDER] Rendering HostShell with role:', currentRole);
